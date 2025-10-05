@@ -1,0 +1,62 @@
+# ───────────────────────────────
+# Build and Dependencies
+# ───────────────────────────────
+**/node_modules/
+**/dist/
+**/build/
+
+# Logs
+**/logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Tests and Coverage
+**/coverage/
+**/.nyc_output/
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.sublime-workspace
+*.launch
+.settings/
+.classpath
+.project
+.c9/
+
+# Keep common VSCode project files
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Env files
+**/.env
+**/.env.*
+**/.env.local
+**/.env.development
+**/.env.production
+**/.env.test
+**/.env*.local
+
+# Temporary & Runtime data
+.temp/
+.tmp/
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Misc
+**/node_modules/.cache/
