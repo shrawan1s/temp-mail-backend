@@ -33,7 +33,7 @@ import * as dotenv from 'dotenv';
 // Load env file first
 dotenv.config();
 
-export const appSettings = {
+export const appConfig = {
     nodeEnv: process.env.NODE_ENV,
     port: Number(process.env.PORT),
     newRelicLicenseKey: process.env.NEW_RELIC_LICENSE_KEY,

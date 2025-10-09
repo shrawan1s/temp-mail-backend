@@ -4,11 +4,11 @@ dotenv.config();
 import 'newrelic';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { appSettings } from './config/appSettings';
+import { appConfig } from './config/app.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const port: number = appSettings.port;
+  const port: number = appConfig.port;
   await app.listen(port);
   console.log(`🚀 Auth service running on port ${port}`);
 }

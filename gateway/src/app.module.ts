@@ -6,11 +6,11 @@ import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware'
 import { AppController } from './app.controller';
 import redisConfig from './config/redis.config';
 import servicesConfig from './config/services.config';
-import appSettings from './config/appSetting.config';
+import appConfig from './config/app.config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [redisConfig, servicesConfig, appSettings] }),
+    ConfigModule.forRoot({ isGlobal: true, load: [redisConfig, servicesConfig, appConfig] }),
     RedisModule,
     ProxyModule,
   ],
