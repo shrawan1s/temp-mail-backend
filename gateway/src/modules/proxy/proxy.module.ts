@@ -1,6 +1,8 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { ConfigService } from '@nestjs/config';
+import { v4 as uuidv4 } from 'uuid';
+import { ProxyOptions } from 'http-proxy';
 
 @Module({})
 export class ProxyModule implements NestModule {
@@ -11,34 +13,24 @@ export class ProxyModule implements NestModule {
         const mailServiceUrl = this.configService.get<string>('services.mail');
         const loggerServiceUrl = this.configService.get<string>('services.logger');
 
-        consumer
-            .apply(
-                createProxyMiddleware({
-                    target: authServiceUrl,
-                    changeOrigin: true,
-                    pathRewrite: { '^/auth': '' },
-                }),
-            )
-            .forRoutes('/auth');
+        const createTracingProxy = (targetUrl: string) =>
+            createProxyMiddleware({
+                target: targetUrl,
+                changeOrigin: true,
+                pathRewrite: (path) => path.replace(/^\/(auth|mail|logger)/, ''),
+                ...({
+                    onProxyReq: (proxyReq, req: any) => {
+                        if (req.headers['traceparent']) proxyReq.setHeader('traceparent', req.headers['traceparent']);
+                        if (req.headers['newrelic']) proxyReq.setHeader('newrelic', req.headers['newrelic']);
+                        const requestId = req.headers['x-request-id'] || uuidv4();
+                        proxyReq.setHeader('x-request-id', requestId);
+                    }
+                } as ProxyOptions),
+            });
 
-        consumer
-            .apply(
-                createProxyMiddleware({
-                    target: mailServiceUrl,
-                    changeOrigin: true,
-                    pathRewrite: { '^/mail': '' },
-                }),
-            )
-            .forRoutes('/mail');
-
-        consumer
-            .apply(
-                createProxyMiddleware({
-                    target: loggerServiceUrl,
-                    changeOrigin: true,
-                    pathRewrite: { '^/logger': '' },
-                }),
-            )
-            .forRoutes('/logger');
+        // Proxy routes with tracing
+        consumer.apply(createTracingProxy(String(authServiceUrl))).forRoutes('/auth');
+        consumer.apply(createTracingProxy(String(mailServiceUrl))).forRoutes('/mail');
+        consumer.apply(createTracingProxy(String(loggerServiceUrl))).forRoutes('/logger');
     }
 }

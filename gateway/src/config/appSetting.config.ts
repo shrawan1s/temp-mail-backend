@@ -27,3 +27,17 @@ export default registerAs('app', () => {
         redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
     };
 });
+
+import * as dotenv from 'dotenv';
+
+// Load env file first
+dotenv.config();
+
+export const appSettings = {
+    nodeEnv: process.env.NODE_ENV,
+    port: Number(process.env.PORT),
+    newRelicLicenseKey: process.env.NEW_RELIC_LICENSE_KEY,
+    newRelicAppName: process.env.NEW_RELIC_APP_NAME,
+    isProd: process.env.NODE_ENV === 'production',
+    isDev: process.env.NODE_ENV === 'development',
+};
