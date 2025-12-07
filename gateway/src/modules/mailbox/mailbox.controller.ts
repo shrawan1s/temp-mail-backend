@@ -9,13 +9,14 @@ import {
   Query,
 } from '@nestjs/common';
 import { MailboxService } from './mailbox.service';
-import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import {
   CreateMailboxDto,
   ListMailboxesQueryDto,
   ListEmailsQueryDto,
   ExtendExpiryDto,
 } from './dto';
+import { ICurrentUserData } from 'src/common/interfaces';
 
 @Controller('mailboxes')
 export class MailboxController {
@@ -23,7 +24,7 @@ export class MailboxController {
 
   @Post()
   async createMailbox(
-    @CurrentUser() user: CurrentUserData,
+    @CurrentUser() user: ICurrentUserData,
     @Body() dto: CreateMailboxDto,
   ) {
     return this.mailboxService.createMailbox({
@@ -36,7 +37,7 @@ export class MailboxController {
 
   @Get()
   async listMailboxes(
-    @CurrentUser() user: CurrentUserData,
+    @CurrentUser() user: ICurrentUserData,
     @Query() query: ListMailboxesQueryDto,
   ) {
     return this.mailboxService.listMailboxes({
@@ -49,7 +50,7 @@ export class MailboxController {
 
   @Get(':mailboxId')
   async getMailbox(
-    @CurrentUser() user: CurrentUserData,
+    @CurrentUser() user: ICurrentUserData,
     @Param('mailboxId') mailboxId: string,
   ) {
     return this.mailboxService.getMailbox({
@@ -60,7 +61,7 @@ export class MailboxController {
 
   @Delete(':mailboxId')
   async deleteMailbox(
-    @CurrentUser() user: CurrentUserData,
+    @CurrentUser() user: ICurrentUserData,
     @Param('mailboxId') mailboxId: string,
   ) {
     return this.mailboxService.deleteMailbox({
@@ -71,7 +72,7 @@ export class MailboxController {
 
   @Patch(':mailboxId/extend')
   async extendExpiry(
-    @CurrentUser() user: CurrentUserData,
+    @CurrentUser() user: ICurrentUserData,
     @Param('mailboxId') mailboxId: string,
     @Body() dto: ExtendExpiryDto,
   ) {
@@ -84,7 +85,7 @@ export class MailboxController {
 
   @Get(':mailboxId/emails')
   async listEmails(
-    @CurrentUser() user: CurrentUserData,
+    @CurrentUser() user: ICurrentUserData,
     @Param('mailboxId') mailboxId: string,
     @Query() query: ListEmailsQueryDto,
   ) {
@@ -98,7 +99,7 @@ export class MailboxController {
 
   @Get(':mailboxId/emails/:emailId')
   async getEmail(
-    @CurrentUser() user: CurrentUserData,
+    @CurrentUser() user: ICurrentUserData,
     @Param('emailId') emailId: string,
   ) {
     return this.mailboxService.getEmail({
@@ -109,7 +110,7 @@ export class MailboxController {
 
   @Delete(':mailboxId/emails/:emailId')
   async deleteEmail(
-    @CurrentUser() user: CurrentUserData,
+    @CurrentUser() user: ICurrentUserData,
     @Param('emailId') emailId: string,
   ) {
     return this.mailboxService.deleteEmail({
@@ -120,7 +121,7 @@ export class MailboxController {
 
   @Patch(':mailboxId/emails/:emailId/read')
   async markEmailRead(
-    @CurrentUser() user: CurrentUserData,
+    @CurrentUser() user: ICurrentUserData,
     @Param('emailId') emailId: string,
   ) {
     return this.mailboxService.markEmailRead({

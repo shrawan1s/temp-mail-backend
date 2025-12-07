@@ -7,15 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-
-interface ErrorResponse {
-  success: false;
-  statusCode: number;
-  message: string;
-  error?: string;
-  timestamp: string;
-  path: string;
-}
+import { IErrorResponse } from '../interfaces/error-response.interface';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -46,7 +38,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof Error) {
       // gRPC errors or other errors
       status = HttpStatus.INTERNAL_SERVER_ERROR;
-      message = exception.message || 'Internal server error';
+      message = exception.message;
       
       // Log the full error for debugging
       this.logger.error(`Unhandled exception: ${exception.message}`, exception.stack);
@@ -55,7 +47,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message = 'Internal server error';
     }
 
-    const errorResponse: ErrorResponse = {
+    const errorResponse: IErrorResponse = {
       success: false,
       statusCode: status,
       message,

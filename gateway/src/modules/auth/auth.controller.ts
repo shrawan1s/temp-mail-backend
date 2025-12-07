@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from '../../common/decorators';
-import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
+import { CurrentUser } from '../../common/decorators';
 import {
   RegisterDto,
   LoginDto,
@@ -20,6 +20,7 @@ import {
   ResetPasswordDto,
   UpdateUserDto,
 } from './dto';
+import { ICurrentUserData } from '../../common/interfaces';
 
 @Controller('auth')
 export class AuthController {
@@ -48,7 +49,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(
-    @CurrentUser() user: CurrentUserData,
+    @CurrentUser() user: ICurrentUserData,
     @Headers('authorization') auth: string,
   ) {
     const token = auth?.replace('Bearer ', '');
@@ -97,7 +98,7 @@ export class AuthController {
   }
 
   @Get('me')
-  async getProfile(@CurrentUser() user: CurrentUserData) {
+  async getProfile(@CurrentUser() user: ICurrentUserData) {
     return this.authService.getUser({
       userId: user.userId,
     });
@@ -105,7 +106,7 @@ export class AuthController {
 
   @Put('me')
   async updateProfile(
-    @CurrentUser() user: CurrentUserData,
+    @CurrentUser() user: ICurrentUserData,
     @Body() dto: UpdateUserDto,
   ) {
     return this.authService.updateUser({

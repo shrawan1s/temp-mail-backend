@@ -12,8 +12,8 @@ import { MailboxService } from './mailbox.service';
         transport: Transport.GRPC,
         options: {
           package: 'mailbox',
-          protoPath: join(__dirname, '../../../proto/mailbox.proto'),
-          url: process.env.MAILBOX_SERVICE_URL || 'localhost:50053',
+          protoPath: join(__dirname, '../../../../proto/mailbox.proto'),
+          url: process.env.MAILBOX_SERVICE_URL,
         },
       },
     ]),

@@ -12,8 +12,8 @@ import { PaymentService } from './payment.service';
         transport: Transport.GRPC,
         options: {
           package: 'payment',
-          protoPath: join(__dirname, '../../../proto/payment.proto'),
-          url: process.env.PAYMENT_SERVICE_URL || 'localhost:50054',
+          protoPath: join(__dirname, '../../../../proto/payment.proto'),
+          url: process.env.PAYMENT_SERVICE_URL,
         },
       },
     ]),
@@ -22,4 +22,4 @@ import { PaymentService } from './payment.service';
   providers: [PaymentService],
   exports: [ClientsModule],
 })
-export class PaymentModule {}
+export class PaymentModule { }

@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { PaymentService } from './payment.service';
-import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
+import { CurrentUser } from '../../common/decorators';
 import { Public } from '../../common/decorators';
 import {
     CreateCheckoutDto,
@@ -22,6 +22,7 @@ import {
     BillingHistoryQueryDto,
     CreatePortalSessionDto,
 } from './dto';
+import { ICurrentUserData } from 'src/common/interfaces';
 
 @Controller('payments')
 export class PaymentController {
@@ -34,7 +35,7 @@ export class PaymentController {
     }
 
     @Get('subscription')
-    async getSubscription(@CurrentUser() user: CurrentUserData) {
+    async getSubscription(@CurrentUser() user: ICurrentUserData) {
         return this.paymentService.getSubscription({
             userId: user.userId,
         });
@@ -42,7 +43,7 @@ export class PaymentController {
 
     @Post('checkout')
     async createCheckout(
-        @CurrentUser() user: CurrentUserData,
+        @CurrentUser() user: ICurrentUserData,
         @Body() dto: CreateCheckoutDto,
     ) {
         return this.paymentService.createCheckoutSession({
@@ -57,7 +58,7 @@ export class PaymentController {
     @Post('subscription/cancel')
     @HttpCode(HttpStatus.OK)
     async cancelSubscription(
-        @CurrentUser() user: CurrentUserData,
+        @CurrentUser() user: ICurrentUserData,
         @Body() dto: CancelSubscriptionDto,
     ) {
         return this.paymentService.cancelSubscription({
@@ -68,7 +69,7 @@ export class PaymentController {
 
     @Post('subscription/resume')
     @HttpCode(HttpStatus.OK)
-    async resumeSubscription(@CurrentUser() user: CurrentUserData) {
+    async resumeSubscription(@CurrentUser() user: ICurrentUserData) {
         return this.paymentService.resumeSubscription({
             userId: user.userId,
         });
@@ -77,7 +78,7 @@ export class PaymentController {
     @Post('subscription/change-plan')
     @HttpCode(HttpStatus.OK)
     async changePlan(
-        @CurrentUser() user: CurrentUserData,
+        @CurrentUser() user: ICurrentUserData,
         @Body() dto: ChangePlanDto,
     ) {
         return this.paymentService.changePlan({
@@ -89,7 +90,7 @@ export class PaymentController {
 
     @Get('billing-history')
     async getBillingHistory(
-        @CurrentUser() user: CurrentUserData,
+        @CurrentUser() user: ICurrentUserData,
         @Query() query: BillingHistoryQueryDto,
     ) {
         return this.paymentService.getBillingHistory({
@@ -101,7 +102,7 @@ export class PaymentController {
 
     @Get('invoices/:invoiceId')
     async getInvoice(
-        @CurrentUser() user: CurrentUserData,
+        @CurrentUser() user: ICurrentUserData,
         @Param('invoiceId') invoiceId: string,
     ) {
         return this.paymentService.getInvoice({
@@ -112,7 +113,7 @@ export class PaymentController {
 
     @Post('portal')
     async createPortalSession(
-        @CurrentUser() user: CurrentUserData,
+        @CurrentUser() user: ICurrentUserData,
         @Body() dto: CreatePortalSessionDto,
     ) {
         return this.paymentService.createPortalSession({

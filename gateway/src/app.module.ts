@@ -4,15 +4,10 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
-
-// Config
-import { appConfig, grpcConfig, jwtConfig, throttleConfig } from './config';
-
-// Common
+import { credentials } from '@grpc/grpc-js';
+import { appConfig, throttleConfig } from './config';
 import { GlobalExceptionFilter } from './common/filters';
 import { JwtAuthGuard } from './common/guards';
-
-// Modules
 import { AuthModule } from './modules/auth/auth.module';
 import { MailboxModule } from './modules/mailbox/mailbox.module';
 import { PaymentModule } from './modules/payment/payment.module';
@@ -23,7 +18,7 @@ import { HealthModule } from './modules/health/health.module';
     // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, grpcConfig, jwtConfig, throttleConfig],
+      load: [appConfig, throttleConfig],
     }),
 
     // Rate Limiting
@@ -36,16 +31,28 @@ import { HealthModule } from './modules/health/health.module';
       }]),
     }),
 
-    // Auth gRPC Client (for JWT Guard)
-    ClientsModule.register([
+    // Auth gRPC Client (for JWT Guard - used globally)
+    ClientsModule.registerAsync([
       {
         name: 'AUTH_PACKAGE',
-        transport: Transport.GRPC,
-        options: {
-          package: 'auth',
-          protoPath: join(__dirname, '../proto/auth.proto'),
-          url: process.env.AUTH_SERVICE_URL || 'localhost:50051',
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'auth',
+            protoPath: join(__dirname, '../../proto/auth.proto'),
+            url: configService.get<string>('AUTH_SERVICE_URL') || 'localhost:5001',
+            credentials: credentials.createInsecure(),
+            loader: {
+              keepCase: true,
+              longs: String,
+              enums: String,
+              defaults: true,
+              oneofs: true,
+            },
+          },
+        }),
       },
     ]),
 
