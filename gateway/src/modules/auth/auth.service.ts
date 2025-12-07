@@ -5,6 +5,10 @@ import {
   AuthServiceClient,
   AuthResponse,
   RegisterRequest,
+  RegisterResponse,
+  VerifyEmailRequest,
+  ResendVerificationRequest,
+  ResendVerificationResponse,
   LoginRequest,
   LogoutRequest,
   LogoutResponse,
@@ -29,8 +33,16 @@ export class AuthService implements OnModuleInit {
     this.authService = this.client.getService<AuthServiceClient>('AuthService');
   }
 
-  async register(data: RegisterRequest): Promise<AuthResponse> {
+  async register(data: RegisterRequest): Promise<RegisterResponse> {
     return firstValueFrom(this.authService.register(data));
+  }
+
+  async verifyEmail(data: VerifyEmailRequest): Promise<AuthResponse> {
+    return firstValueFrom(this.authService.verifyEmail(data));
+  }
+
+  async resendVerificationCode(data: ResendVerificationRequest): Promise<ResendVerificationResponse> {
+    return firstValueFrom(this.authService.resendVerificationCode(data));
   }
 
   async login(data: LoginRequest): Promise<AuthResponse> {

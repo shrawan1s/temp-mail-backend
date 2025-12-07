@@ -6,10 +6,16 @@ option go_package = "./auth";
 
 // Auth Service - handles user authentication and management
 service AuthService {
-  // User registration
-  rpc Register(RegisterRequest) returns (AuthResponse);
+  // User registration (sends verification code)
+  rpc Register(RegisterRequest) returns (RegisterResponse);
   
-  // User login
+  // Verify email with code
+  rpc VerifyEmail(VerifyEmailRequest) returns (AuthResponse);
+  
+  // Resend verification code
+  rpc ResendVerificationCode(ResendVerificationRequest) returns (ResendVerificationResponse);
+  
+  // User login (requires verified email)
   rpc Login(LoginRequest) returns (AuthResponse);
   
   // Logout - invalidate tokens
@@ -132,3 +138,25 @@ message ResetPasswordConfirmResponse {
   bool success = 1;
   string message = 2;
 }
+
+// Email Verification Messages
+message RegisterResponse {
+  bool success = 1;
+  string message = 2;
+  string user_id = 3;
+}
+
+message VerifyEmailRequest {
+  string user_id = 1;
+  string code = 2;
+}
+
+message ResendVerificationRequest {
+  string email = 1;
+}
+
+message ResendVerificationResponse {
+  bool success = 1;
+  string message = 2;
+}
+

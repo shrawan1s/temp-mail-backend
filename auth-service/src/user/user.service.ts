@@ -37,6 +37,10 @@ export class UserService {
       ? await bcrypt.hash(data.password, 10)
       : null;
 
+    // Generate 6-digit verification code
+    const verificationCode = this.generateVerificationCode();
+    const verificationCodeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
     return this.prisma.user.create({
       data: {
         email: data.email,
@@ -46,6 +50,8 @@ export class UserService {
         githubId: data.githubId,
         avatarUrl: data.avatarUrl,
         isVerified: !!data.googleId || !!data.githubId, // OAuth users are auto-verified
+        verificationCode: (data.googleId || data.githubId) ? null : verificationCode,
+        verificationCodeExpiry: (data.googleId || data.githubId) ? null : verificationCodeExpiry,
       },
     });
   }
@@ -92,5 +98,60 @@ export class UserService {
       where: { id: userId },
       data: { plan },
     });
+  }
+
+  // Verification methods
+  private generateVerificationCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  async verifyEmail(userId: string, code: string): Promise<{ success: boolean; user?: User }> {
+    const user = await this.findById(userId);
+    if (!user) {
+      return { success: false };
+    }
+
+    if (user.isVerified) {
+      return { success: true, user };
+    }
+
+    if (!user.verificationCode || user.verificationCode !== code) {
+      return { success: false };
+    }
+
+    if (!user.verificationCodeExpiry || user.verificationCodeExpiry < new Date()) {
+      return { success: false };
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        isVerified: true,
+        verificationCode: null,
+        verificationCodeExpiry: null,
+      },
+    });
+
+    return { success: true, user: updatedUser };
+  }
+
+  async resendVerificationCode(email: string): Promise<{ success: boolean; user?: User; code?: string }> {
+    const user = await this.findByEmail(email);
+    if (!user || user.isVerified) {
+      return { success: false };
+    }
+
+    const verificationCode = this.generateVerificationCode();
+    const verificationCodeExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verificationCode,
+        verificationCodeExpiry,
+      },
+    });
+
+    return { success: true, user: updatedUser, code: verificationCode };
   }
 }

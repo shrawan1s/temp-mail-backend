@@ -1,3 +1,4 @@
+// Request interfaces - use snake_case to match proto
 export interface IRegisterRequest {
   email: string;
   password: string;
@@ -10,32 +11,32 @@ export interface ILoginRequest {
 }
 
 export interface ILogoutRequest {
-  userId: string;
-  accessToken: string;
+  user_id: string;
+  access_token: string;
 }
 
 export interface IRefreshTokenRequest {
-  refreshToken: string;
+  refresh_token: string;
 }
 
 export interface IValidateTokenRequest {
-  accessToken: string;
+  access_token: string;
 }
 
 export interface IGetUserRequest {
-  userId: string;
+  user_id: string;
 }
 
 export interface IUserUpdateRequest {
-  userId: string;
+  user_id: string;
   name?: string;
-  avatarUrl?: string;
+  avatar_url?: string;
 }
 
 export interface IOAuthLoginRequest {
   provider: string;
   code: string;
-  redirectUri: string;
+  redirect_uri: string;
 }
 
 export interface IPasswordResetRequest {
@@ -44,24 +45,40 @@ export interface IPasswordResetRequest {
 
 export interface IResetPasswordConfirmRequest {
   token: string;
-  newPassword: string;
+  new_password: string;
 }
 
+export interface IVerifyEmailRequest {
+  user_id: string;
+  code: string;
+}
+
+export interface IResendVerificationRequest {
+  email: string;
+}
+
+// Response interfaces - use snake_case to match proto
 export interface IUserDto {
   id: string;
   email: string;
   name: string;
-  avatarUrl: string;
+  avatar_url: string;
   plan: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IRegisterResponse {
+  success: boolean;
+  message: string;
+  user_id?: string;
 }
 
 export interface IAuthResponse {
   success: boolean;
   message: string;
-  accessToken?: string;
-  refreshToken?: string;
+  access_token?: string;
+  refresh_token?: string;
   user?: IUserDto;
 }
 
@@ -72,7 +89,7 @@ export interface ILogoutResponse {
 
 export interface IValidateTokenResponse {
   valid: boolean;
-  userId?: string;
+  user_id?: string;
   email?: string;
 }
 
@@ -88,6 +105,11 @@ export interface IPasswordResetResponse {
 }
 
 export interface IResetPasswordConfirmResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface IResendVerificationResponse {
   success: boolean;
   message: string;
 }

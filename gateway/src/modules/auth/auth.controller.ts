@@ -13,6 +13,8 @@ import { Public } from '../../common/decorators';
 import { CurrentUser } from '../../common/decorators';
 import {
   RegisterDto,
+  VerifyEmailDto,
+  ResendVerificationDto,
   LoginDto,
   RefreshTokenDto,
   OAuthLoginDto,
@@ -37,6 +39,25 @@ export class AuthController {
   }
 
   @Public()
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail({
+      user_id: dto.userId,
+      code: dto.code,
+    });
+  }
+
+  @Public()
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  async resendVerificationCode(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerificationCode({
+      email: dto.email,
+    });
+  }
+
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto) {
@@ -54,8 +75,8 @@ export class AuthController {
   ) {
     const token = auth?.replace('Bearer ', '');
     return this.authService.logout({
-      userId: user.userId,
-      accessToken: token,
+      user_id: user.userId,
+      access_token: token,
     });
   }
 
@@ -64,7 +85,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refreshToken(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshToken({
-      refreshToken: dto.refreshToken,
+      refresh_token: dto.refreshToken,
     });
   }
 
@@ -74,7 +95,7 @@ export class AuthController {
     return this.authService.oAuthLogin({
       provider: dto.provider,
       code: dto.code,
-      redirectUri: dto.redirectUri,
+      redirect_uri: dto.redirectUri,
     });
   }
 
@@ -93,14 +114,14 @@ export class AuthController {
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword({
       token: dto.token,
-      newPassword: dto.newPassword,
+      new_password: dto.newPassword,
     });
   }
 
   @Get('me')
   async getProfile(@CurrentUser() user: ICurrentUserData) {
     return this.authService.getUser({
-      userId: user.userId,
+      user_id: user.userId,
     });
   }
 
@@ -110,9 +131,9 @@ export class AuthController {
     @Body() dto: UpdateUserDto,
   ) {
     return this.authService.updateUser({
-      userId: user.userId,
+      user_id: user.userId,
       name: dto.name,
-      avatarUrl: dto.avatarUrl,
+      avatar_url: dto.avatarUrl,
     });
   }
 }

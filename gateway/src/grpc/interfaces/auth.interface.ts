@@ -2,7 +2,9 @@ import { Observable } from 'rxjs';
 
 // Auth Service Interfaces
 export interface AuthServiceClient {
-  register(data: RegisterRequest): Observable<AuthResponse>;
+  register(data: RegisterRequest): Observable<RegisterResponse>;
+  verifyEmail(data: VerifyEmailRequest): Observable<AuthResponse>;
+  resendVerificationCode(data: ResendVerificationRequest): Observable<ResendVerificationResponse>;
   login(data: LoginRequest): Observable<AuthResponse>;
   logout(data: LogoutRequest): Observable<LogoutResponse>;
   refreshToken(data: RefreshTokenRequest): Observable<AuthResponse>;
@@ -20,6 +22,26 @@ export interface RegisterRequest {
   name: string;
 }
 
+export interface RegisterResponse {
+  success: boolean;
+  message: string;
+  user_id?: string;
+}
+
+export interface VerifyEmailRequest {
+  user_id: string;
+  code: string;
+}
+
+export interface ResendVerificationRequest {
+  email: string;
+}
+
+export interface ResendVerificationResponse {
+  success: boolean;
+  message: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -28,14 +50,14 @@ export interface LoginRequest {
 export interface AuthResponse {
   success: boolean;
   message: string;
-  accessToken?: string;
-  refreshToken?: string;
+  access_token?: string;
+  refresh_token?: string;
   user?: User;
 }
 
 export interface LogoutRequest {
-  userId: string;
-  accessToken: string;
+  user_id: string;
+  access_token: string;
 }
 
 export interface LogoutResponse {
@@ -44,27 +66,27 @@ export interface LogoutResponse {
 }
 
 export interface RefreshTokenRequest {
-  refreshToken: string;
+  refresh_token: string;
 }
 
 export interface ValidateTokenRequest {
-  accessToken: string;
+  access_token: string;
 }
 
 export interface ValidateTokenResponse {
   valid: boolean;
-  userId?: string;
+  user_id?: string;
   email?: string;
 }
 
 export interface GetUserRequest {
-  userId: string;
+  user_id: string;
 }
 
 export interface UpdateUserRequest {
-  userId: string;
+  user_id: string;
   name?: string;
-  avatarUrl?: string;
+  avatar_url?: string;
 }
 
 export interface UserResponse {
@@ -77,16 +99,16 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  avatarUrl?: string;
+  avatar_url?: string;
   plan: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface OAuthLoginRequest {
   provider: string;
   code: string;
-  redirectUri: string;
+  redirect_uri: string;
 }
 
 export interface PasswordResetRequest {
@@ -100,7 +122,7 @@ export interface PasswordResetResponse {
 
 export interface ResetPasswordConfirmRequest {
   token: string;
-  newPassword: string;
+  new_password: string;
 }
 
 export interface ResetPasswordConfirmResponse {

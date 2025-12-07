@@ -45,7 +45,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
 
     try {
       const response: ValidateTokenResponse = await firstValueFrom(
-        this.authService.validateToken({ accessToken: token }),
+        this.authService.validateToken({ access_token: token }),
       );
 
       if (!response.valid) {
@@ -54,7 +54,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
 
       // Attach user info to request
       request.user = {
-        userId: response.userId,
+        userId: response.user_id,
         email: response.email,
       };
 
