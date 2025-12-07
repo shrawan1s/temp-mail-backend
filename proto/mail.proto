@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package mail;
+
+option go_package = "./mail";
+
+// Mail Service - handles SMTP receiving, parsing, and forwarding
+service MailService {
+  // Process incoming email from SMTP server
+  rpc ProcessIncomingEmail(IncomingEmailRequest) returns (ProcessEmailResponse);
+  
+  // Parse email content and extract data
+  rpc ParseEmail(ParseEmailRequest) returns (ParsedEmailResponse);
+  
+  // Forward email to user's real email address
+  rpc ForwardEmail(ForwardEmailRequest) returns (ForwardEmailResponse);
+  
+  // Get email with full content and attachments
+  rpc GetEmailContent(GetEmailContentRequest) returns (EmailContentResponse);
+}
+
+// Request/Response Messages
+
+message IncomingEmailRequest {
+  string from = 1;
+  string to = 2;
+  string subject = 3;
+  string raw_content = 4;
+  string received_at = 5;
+}
+
+message ProcessEmailResponse {
+  bool success = 1;
+  string message = 2;
+  string email_id = 3;
+  string mailbox_id = 4;
+}
+
+message ParseEmailRequest {
+  string raw_content = 1;
+}
+
+message ParsedEmailResponse {
+  bool success = 1;
+  string from = 2;
+  string to = 3;
+  string subject = 4;
+  string text_body = 5;
+  string html_body = 6;
+  repeated Attachment attachments = 7;
+  repeated EmailHeader headers = 8;
+}
+
+message Attachment {
+  string filename = 1;
+  string content_type = 2;
+  int64 size = 3;
+  string content_id = 4;
+  bytes content = 5;
+}
+
+message EmailHeader {
+  string name = 1;
+  string value = 2;
+}
+
+message ForwardEmailRequest {
+  string email_id = 1;
+  string forward_to = 2;
+  string user_id = 3;
+}
+
+message ForwardEmailResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetEmailContentRequest {
+  string email_id = 1;
+}
+
+message EmailContentResponse {
+  bool success = 1;
+  string message = 2;
+  Email email = 3;
+}
+
+message Email {
+  string id = 1;
+  string mailbox_id = 2;
+  string from = 3;
+  string to = 4;
+  string subject = 5;
+  string text_body = 6;
+  string html_body = 7;
+  repeated Attachment attachments = 8;
+  bool is_read = 9;
+  string received_at = 10;
+}

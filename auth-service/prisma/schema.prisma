@@ -1,0 +1,86 @@
+// Prisma Schema for Auth Service
+// PostgreSQL database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String?   // Nullable for OAuth users
+  name          String
+  avatarUrl     String?
+  plan          String    @default("free")
+  isVerified    Boolean   @default(false)
+  
+  // Email Verification
+  verificationCode       String?
+  verificationCodeExpiry DateTime?
+  
+  // OAuth
+  googleId      String?   @unique
+  githubId      String?   @unique
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  refreshTokens RefreshToken[]
+  passwordResets PasswordReset[]
+  sessions      Session[]
+  
+  @@map("users")
+}
+
+// Refresh Tokens
+model RefreshToken {
+  id          String   @id @default(uuid())
+  token       String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// Password Reset Tokens
+model PasswordReset {
+  id          String   @id @default(uuid())
+  token       String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  used        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  @@index([token])
+  @@index([userId])
+  @@map("password_resets")
+}
+
+// User Sessions (for tracking active sessions)
+model Session {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken String   @unique
+  userAgent   String?
+  ipAddress   String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([accessToken])
+  @@map("sessions")
+}

@@ -1,0 +1,162 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "./auth";
+
+// Auth Service - handles user authentication and management
+service AuthService {
+  // User registration (sends verification code)
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  
+  // Verify email with code
+  rpc VerifyEmail(VerifyEmailRequest) returns (AuthResponse);
+  
+  // Resend verification code
+  rpc ResendVerificationCode(ResendVerificationRequest) returns (ResendVerificationResponse);
+  
+  // User login (requires verified email)
+  rpc Login(LoginRequest) returns (AuthResponse);
+  
+  // Logout - invalidate tokens
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  
+  // Refresh access token
+  rpc RefreshToken(RefreshTokenRequest) returns (AuthResponse);
+  
+  // Validate JWT token
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  
+  // Get user profile
+  rpc GetUser(GetUserRequest) returns (UserResponse);
+  
+  // Update user profile
+  rpc UpdateUser(UpdateUserRequest) returns (UserResponse);
+  
+  // OAuth authentication
+  rpc OAuthLogin(OAuthLoginRequest) returns (AuthResponse);
+  
+  // Request password reset
+  rpc RequestPasswordReset(PasswordResetRequest) returns (PasswordResetResponse);
+  
+  // Reset password
+  rpc ResetPassword(ResetPasswordConfirmRequest) returns (ResetPasswordConfirmResponse);
+}
+
+// Request/Response Messages
+
+message RegisterRequest {
+  string email = 1;
+  string password = 2;
+  string name = 3;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message AuthResponse {
+  bool success = 1;
+  string message = 2;
+  string access_token = 3;
+  string refresh_token = 4;
+  User user = 5;
+}
+
+message LogoutRequest {
+  string user_id = 1;
+  string access_token = 2;
+}
+
+message LogoutResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message ValidateTokenRequest {
+  string access_token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  string user_id = 2;
+  string email = 3;
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message UpdateUserRequest {
+  string user_id = 1;
+  optional string name = 2;
+  optional string avatar_url = 3;
+}
+
+message UserResponse {
+  bool success = 1;
+  string message = 2;
+  User user = 3;
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  string avatar_url = 4;
+  string plan = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message OAuthLoginRequest {
+  string provider = 1;  // "google" or "github"
+  string code = 2;
+  string redirect_uri = 3;
+}
+
+message PasswordResetRequest {
+  string email = 1;
+}
+
+message PasswordResetResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ResetPasswordConfirmRequest {
+  string token = 1;
+  string new_password = 2;
+}
+
+message ResetPasswordConfirmResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Email Verification Messages
+message RegisterResponse {
+  bool success = 1;
+  string message = 2;
+  string user_id = 3;
+}
+
+message VerifyEmailRequest {
+  string user_id = 1;
+  string code = 2;
+}
+
+message ResendVerificationRequest {
+  string email = 1;
+}
+
+message ResendVerificationResponse {
+  bool success = 1;
+  string message = 2;
+}
+
