@@ -1,2 +1,2 @@
-export { default as appConfig } from './app.config';
-export { default as throttleConfig } from './throttle.config';
+export * from './app.config';
+export * from './throttle.config';

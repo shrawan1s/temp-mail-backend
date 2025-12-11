@@ -1,4 +1,4 @@
-export { default as appConfig } from './app.config';
-export { default as jwtConfig } from './jwt.config';
-export { default as redisConfig } from './redis.config';
-export { default as oauthConfig } from './oauth.config';
+export * from './app.config';
+export * from './jwt.config';
+export * from './redis.config';
+export * from './oauth.config';
