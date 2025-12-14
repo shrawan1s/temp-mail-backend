@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Brevo from '@getbrevo/brevo';
 
+/**
+ * Service for sending transactional emails via Brevo (formerly Sendinblue).
+ * Falls back to logging in development mode if BREVO_API_KEY is not configured.
+ */
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -21,6 +25,13 @@ export class EmailService {
     this.senderName = this.configService.get<string>('SENDER_NAME') || '';
   }
 
+  /**
+   * Send a 6-digit verification code email to the user.
+   * @param to - Recipient email address
+   * @param name - Recipient name for personalization
+   * @param code - 6-digit verification code
+   * @returns true if sent successfully
+   */
   async sendVerificationCode(to: string, name: string, code: string): Promise<boolean> {
     if (!this.apiInstance) {
       this.logger.warn('Brevo API not configured, skipping email send');
@@ -55,6 +66,13 @@ export class EmailService {
     }
   }
 
+  /**
+   * Send a password reset email with a secure link.
+   * @param to - Recipient email address
+   * @param name - Recipient name for personalization
+   * @param resetLink - Password reset URL (includes token)
+   * @returns true if sent successfully
+   */
   async sendPasswordResetEmail(to: string, name: string, resetLink: string): Promise<boolean> {
     if (!this.apiInstance) {
       this.logger.warn('Brevo API not configured, skipping email send');

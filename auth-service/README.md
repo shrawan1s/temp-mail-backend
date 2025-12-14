@@ -1,98 +1,244 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Auth Service
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+The Auth Service is a gRPC microservice that handles all authentication and user management operations for the TempMail Pro application.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Architecture
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ pnpm install
+```
+┌─────────────┐      gRPC       ┌──────────────┐
+│   Gateway   │ ──────────────► │ Auth Service │
+└─────────────┘                 └──────┬───────┘
+                                       │
+                    ┌──────────────────┼──────────────────┐
+                    │                  │                  │
+                    ▼                  ▼                  ▼
+             ┌──────────┐       ┌───────────┐      ┌───────────┐
+             │PostgreSQL│       │   Redis   │      │   Brevo   │
+             │(Prisma)  │       │ (Tokens)  │      │  (Email)  │
+             └──────────┘       └───────────┘      └───────────┘
 ```
 
-## Compile and run the project
+## Features
 
-```bash
-# development
-$ pnpm run start
+- **User Registration** - Email/password signup with verification
+- **Email Verification** - 6-digit code with 10-minute expiry
+- **Login/Logout** - JWT-based authentication
+- **Token Management** - Access tokens (15m), refresh tokens (7d), token rotation
+- **OAuth** - Google and GitHub social login
+- **Password Reset** - Secure token-based password reset flow
+- **User Profile** - Get and update user information
 
-# watch mode
-$ pnpm run start:dev
+## Tech Stack
 
-# production mode
-$ pnpm run start:prod
+- **Framework**: NestJS with gRPC transport
+- **Database**: PostgreSQL via Prisma ORM
+- **Cache**: Redis for token blacklisting and sessions
+- **Email**: Brevo (formerly Sendinblue) for transactional emails
+- **Monitoring**: New Relic APM
+
+## Project Structure
+
+```
+src/
+├── auth/                 # gRPC controller and module
+│   ├── auth.controller.ts  # gRPC methods (Register, Login, etc.)
+│   └── auth.module.ts
+├── user/                 # User management
+│   └── user.service.ts     # CRUD, verification, password
+├── token/                # Token management
+│   └── token.service.ts    # JWT, refresh tokens, password reset
+├── email/                # Email service
+│   └── email.service.ts    # Verification codes, password reset emails
+├── oauth/                # OAuth providers
+│   └── oauth.service.ts    # Google and GitHub OAuth flows
+├── redis/                # Redis client
+│   └── redis.service.ts    # Token blacklisting, sessions
+├── prisma/               # Database client
+│   └── prisma.service.ts
+├── config/               # Configuration modules
+├── constants/            # Response messages
+├── interfaces/           # TypeScript interfaces
+└── main.ts               # Application bootstrap
 ```
 
-## Run tests
+## gRPC Methods
 
-```bash
-# unit tests
-$ pnpm run test
+| Method                   | Description                              | Auth Required |
+| ------------------------ | ---------------------------------------- | ------------- |
+| `Register`               | Create new user, send verification email | No            |
+| `VerifyEmail`            | Verify email with 6-digit code           | No            |
+| `ResendVerificationCode` | Resend verification email                | No            |
+| `Login`                  | Authenticate with email/password         | No            |
+| `Logout`                 | Blacklist access token                   | Yes           |
+| `RefreshToken`           | Get new token pair using refresh token   | No            |
+| `ValidateToken`          | Validate access token (used by Gateway)  | No            |
+| `GetUser`                | Get user profile by ID                   | Yes           |
+| `UpdateUser`             | Update user name/avatar                  | Yes           |
+| `OAuthLogin`             | Authenticate via Google/GitHub           | No            |
+| `RequestPasswordReset`   | Send password reset email                | No            |
+| `ResetPassword`          | Set new password with reset token        | No            |
 
-# e2e tests
-$ pnpm run test:e2e
+## Authentication Flow
 
-# test coverage
-$ pnpm run test:cov
+### Email/Password Registration
+
+```
+1. Client → Gateway: POST /auth/register {email, password, name}
+2. Gateway → Auth Service: gRPC Register()
+3. Auth Service: Create user, generate 6-digit code
+4. Auth Service → Brevo: Send verification email
+5. Auth Service → Gateway → Client: {success, user_id}
+6. Client → Gateway: POST /auth/verify-email {userId, code}
+7. Gateway → Auth Service: gRPC VerifyEmail()
+8. Auth Service: Mark verified, generate tokens
+9. Auth Service → Gateway → Client: {tokens, user}
 ```
 
-## Deployment
+### OAuth Flow
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+```
+1. Client: Redirect to Google/GitHub OAuth URL
+2. Provider: User authorizes, redirects with code
+3. Client → Gateway: POST /auth/oauth/google {code, redirectUri}
+4. Gateway → Auth Service: gRPC OAuthLogin()
+5. Auth Service → Google/GitHub: Exchange code for access token
+6. Auth Service → Google/GitHub: Fetch user info
+7. Auth Service: Find/create user, generate tokens
+8. Auth Service → Gateway → Client: {tokens, user}
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Token Refresh
 
-## Resources
+```
+1. Client: Access token expired
+2. Client → Gateway: POST /auth/refresh {refreshToken}
+3. Gateway → Auth Service: gRPC RefreshToken()
+4. Auth Service: Validate refresh token, delete old one (rotation)
+5. Auth Service: Generate new token pair
+6. Auth Service → Gateway → Client: {new tokens}
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+## Setup
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### Prerequisites
 
-## Support
+- Node.js 18+
+- PostgreSQL 14+
+- Redis 6+
+- pnpm
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Installation
 
-## Stay in touch
+```bash
+# Install dependencies
+pnpm install
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# Generate Prisma client
+npx prisma generate
 
-## License
+# Run database migrations
+npx prisma migrate dev
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# Start development server
+pnpm start:dev
+```
+
+### Environment Variables
+
+Create a `.env` file (see `sample.env`):
+
+```env
+# Server
+PORT=50051
+NODE_ENV=development
+
+# Database
+DATABASE_URL="postgresql://user:pass@localhost:5432/temp_email_auth"
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# JWT
+JWT_SECRET=your-secret-key-min-32-chars
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+
+# OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+
+# Email (Brevo)
+BREVO_API_KEY=
+SENDER_EMAIL=noreply@yourdomain.com
+SENDER_NAME=TempMail
+
+# Frontend (for email links)
+FRONTEND_URL=http://localhost:3000
+
+# Monitoring (optional)
+NEW_RELIC_LICENSE_KEY=
+NEW_RELIC_APP_NAME=TempMail-Auth
+```
+
+## Database Schema
+
+```prisma
+model User {
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  password               String?
+  name                   String
+  avatarUrl              String?
+  isVerified             Boolean   @default(false)
+  verificationCode       String?
+  verificationCodeExpiry DateTime?
+  googleId               String?   @unique
+  githubId               String?   @unique
+  plan                   String    @default("free")
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(...)
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  user      User     @relation(...)
+}
+```
+
+## Security Features
+
+- **Password Hashing**: bcrypt with 10 rounds
+- **Token Blacklisting**: Revoked tokens stored in Redis until expiry
+- **Token Rotation**: Old refresh token deleted when new pair issued
+- **Rate Limiting**: Handled by Gateway
+- **Input Validation**: DTO validation with class-validator
+
+## Scripts
+
+```bash
+pnpm start:dev    # Development with hot reload
+pnpm build        # Build for production
+pnpm start:prod   # Run production build
+pnpm lint         # ESLint
+pnpm test         # Run tests
+```
+
+## Proto Definition
+
+The gRPC interface is defined in `proto/auth.proto`. See the Gateway README for the full proto definition.
