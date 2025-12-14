@@ -38,10 +38,10 @@ services:
           type: web
           property: hostport
       - key: MAIL_SERVICE_URL
-        sync: false
+        value: 0.0.0.0:0
       - key: MAILBOX_SERVICE_URL
-        sync: false
+        value: 0.0.0.0:0
       - key: PAYMENT_SERVICE_URL
-        sync: false
+        value: 0.0.0.0:0
       - key: CORS_ORIGIN
         sync: false
