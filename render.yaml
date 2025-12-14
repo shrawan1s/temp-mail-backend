@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: temp-email-auth-service
+    env: docker
+    dockerContext: backend
+    dockerfilePath: backend/auth-service/Dockerfile
+    envVars:
+      - key: PORT
+        value: 5001
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        value: 6379
+      - key: REDIS_USERNAME
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+
+  - type: web
+    name: temp-email-gateway
+    env: docker
+    dockerContext: backend
+    dockerfilePath: backend/gateway/Dockerfile
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: AUTH_SERVICE_URL
+        fromService:
+          name: temp-email-auth-service
+          type: web
+          property: hostport
+      - key: MAIL_SERVICE_URL
+        sync: false
+      - key: MAILBOX_SERVICE_URL
+        sync: false
+      - key: PAYMENT_SERVICE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"
