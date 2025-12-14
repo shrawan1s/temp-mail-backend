@@ -24,10 +24,15 @@ import {
 } from './dto';
 import { ICurrentUserData } from '../../common/interfaces';
 
+/**
+ * REST API controller for authentication endpoints.
+ * Routes are prefixed with /api/v1/auth
+ */
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /** POST /auth/register - Create new user account */
   @Public()
   @Post('register')
   async register(@Body() dto: RegisterDto) {
@@ -38,6 +43,7 @@ export class AuthController {
     });
   }
 
+  /** POST /auth/verify-email - Verify email with 6-digit code */
   @Public()
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
@@ -48,6 +54,7 @@ export class AuthController {
     });
   }
 
+  /** POST /auth/resend-verification - Resend verification code */
   @Public()
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
@@ -57,6 +64,7 @@ export class AuthController {
     });
   }
 
+  /** POST /auth/login - Authenticate with email/password */
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -67,6 +75,7 @@ export class AuthController {
     });
   }
 
+  /** POST /auth/logout - End current session (requires auth) */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(
@@ -80,6 +89,7 @@ export class AuthController {
     });
   }
 
+  /** POST /auth/refresh - Get new tokens using refresh token */
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -89,6 +99,7 @@ export class AuthController {
     });
   }
 
+  /** POST /auth/oauth/:provider - OAuth login (Google/GitHub) */
   @Public()
   @Post('oauth/:provider')
   async oAuthLogin(@Body() dto: OAuthLoginDto) {
@@ -99,6 +110,7 @@ export class AuthController {
     });
   }
 
+  /** POST /auth/password-reset/request - Send password reset email */
   @Public()
   @Post('password-reset/request')
   @HttpCode(HttpStatus.OK)
@@ -108,6 +120,7 @@ export class AuthController {
     });
   }
 
+  /** POST /auth/password-reset/confirm - Set new password with token */
   @Public()
   @Post('password-reset/confirm')
   @HttpCode(HttpStatus.OK)
@@ -118,6 +131,7 @@ export class AuthController {
     });
   }
 
+  /** GET /auth/me - Get current user profile (requires auth) */
   @Get('me')
   async getProfile(@CurrentUser() user: ICurrentUserData) {
     return this.authService.getUser({
@@ -125,6 +139,7 @@ export class AuthController {
     });
   }
 
+  /** PUT /auth/me - Update current user profile (requires auth) */
   @Put('me')
   async updateProfile(
     @CurrentUser() user: ICurrentUserData,

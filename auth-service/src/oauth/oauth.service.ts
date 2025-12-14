@@ -3,6 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user';
 import { IOAuthUserInfo } from 'src/interfaces';
 
+/**
+ * Service for handling OAuth authentication with Google and GitHub.
+ * Exchanges authorization codes for tokens and fetches user profile info.
+ */
 @Injectable()
 export class OAuthService {
   private readonly logger = new Logger(OAuthService.name);
@@ -12,6 +16,13 @@ export class OAuthService {
     private userService: UserService,
   ) {}
 
+  /**
+   * Handle Google OAuth login.
+   * Exchanges authorization code for access token and fetches user info.
+   * @param code - Authorization code from Google OAuth redirect
+   * @param redirectUri - Must match the redirect_uri used in the auth request
+   * @returns User info if successful, null on failure
+   */
   async handleGoogleLogin(code: string, redirectUri: string): Promise<IOAuthUserInfo | null> {
     try {
       // Exchange code for tokens
@@ -34,7 +45,7 @@ export class OAuthService {
 
       const tokens = await tokenResponse.json();
 
-      // Get user info
+      // Fetch user profile
       const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
         headers: { Authorization: `Bearer ${tokens.access_token}` },
       });
@@ -58,6 +69,14 @@ export class OAuthService {
     }
   }
 
+  /**
+   * Handle GitHub OAuth login.
+   * Exchanges authorization code for access token and fetches user info.
+   * Handles private email addresses by fetching from /user/emails endpoint.
+   * @param code - Authorization code from GitHub OAuth redirect
+   * @param redirectUri - Must match the redirect_uri used in the auth request
+   * @returns User info if successful, null on failure
+   */
   async handleGithubLogin(code: string, redirectUri: string): Promise<IOAuthUserInfo | null> {
     try {
       // Exchange code for access token
@@ -87,7 +106,7 @@ export class OAuthService {
         return null;
       }
 
-      // Get user info
+      // Fetch user profile
       const userResponse = await fetch('https://api.github.com/user', {
         headers: {
           Authorization: `Bearer ${tokens.access_token}`,
@@ -102,7 +121,7 @@ export class OAuthService {
 
       const userInfo = await userResponse.json();
 
-      // Get user email (may need separate call if email is private)
+      // GitHub may have private email - fetch from /user/emails if needed
       let email = userInfo.email;
       if (!email) {
         const emailsResponse = await fetch('https://api.github.com/user/emails', {

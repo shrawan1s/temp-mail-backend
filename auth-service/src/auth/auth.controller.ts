@@ -29,6 +29,11 @@ import {
   IVerifyEmailRequest,
 } from '../interfaces';
 
+/**
+ * gRPC controller for authentication operations.
+ * Handles user registration, login, OAuth, email verification, and password reset.
+ * All methods are exposed via gRPC and called by the Gateway service.
+ */
 @Controller()
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
@@ -38,8 +43,9 @@ export class AuthController {
     private tokenService: TokenService,
     private oauthService: OAuthService,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
+  /** Convert Prisma User model to DTO for gRPC response */
   private toUserDto(user: any): IUserDto {
     return {
       id: user.id,
@@ -52,6 +58,7 @@ export class AuthController {
     };
   }
 
+  /** Register a new user and send verification email */
   @GrpcMethod('AuthService', 'Register')
   async register(data: IRegisterRequest): Promise<IRegisterResponse> {
     try {
@@ -90,11 +97,15 @@ export class AuthController {
     }
   }
 
+  /**
+   * Verify user email with 6-digit code.
+   * On success: marks email verified, returns tokens and user data.
+   */
   @GrpcMethod('AuthService', 'VerifyEmail')
   async verifyEmail(data: IVerifyEmailRequest): Promise<IAuthResponse> {
     try {
       const result = await this.userService.verifyEmail(data.user_id, data.code);
-      
+
       if (!result.success || !result.user) {
         return {
           success: false,
@@ -122,11 +133,15 @@ export class AuthController {
     }
   }
 
+  /**
+   * Resend email verification code.
+   * Returns success even if email not found (security: don't reveal user existence).
+   */
   @GrpcMethod('AuthService', 'ResendVerificationCode')
   async resendVerificationCode(data: IResendVerificationRequest): Promise<IResendVerificationResponse> {
     try {
       const result = await this.userService.resendVerificationCode(data.email);
-      
+
       if (!result.success || !result.user || !result.code) {
         return {
           success: true, // Don't reveal whether email exists
@@ -151,6 +166,10 @@ export class AuthController {
     }
   }
 
+  /**
+   * Authenticate user with email and password.
+   * Requires verified email. Returns tokens and user data on success.
+   */
   @GrpcMethod('AuthService', 'Login')
   async login(data: ILoginRequest): Promise<IAuthResponse> {
     try {
@@ -198,6 +217,9 @@ export class AuthController {
     }
   }
 
+  /**
+   * End user session by blacklisting the access token.
+   */
   @GrpcMethod('AuthService', 'Logout')
   async logout(data: ILogoutRequest): Promise<ILogoutResponse> {
     try {
@@ -218,6 +240,10 @@ export class AuthController {
     }
   }
 
+  /**
+   * Exchange refresh token for new access/refresh token pair.
+   * Implements token rotation: old refresh token is invalidated.
+   */
   @GrpcMethod('AuthService', 'RefreshToken')
   async refreshToken(data: IRefreshTokenRequest): Promise<IAuthResponse> {
     try {
@@ -244,6 +270,10 @@ export class AuthController {
     }
   }
 
+  /**
+   * Validate access token and return user info if valid.
+   * Used by Gateway to authenticate incoming requests.
+   */
   @GrpcMethod('AuthService', 'ValidateToken')
   async validateToken(data: IValidateTokenRequest): Promise<IValidateTokenResponse> {
     try {
@@ -262,6 +292,9 @@ export class AuthController {
     }
   }
 
+  /**
+   * Get user profile by ID.
+   */
   @GrpcMethod('AuthService', 'GetUser')
   async getUser(data: IGetUserRequest): Promise<IUserResponse> {
     try {
@@ -287,6 +320,9 @@ export class AuthController {
     }
   }
 
+  /**
+   * Update user profile (name and/or avatar).
+   */
   @GrpcMethod('AuthService', 'UpdateUser')
   async updateUser(data: IUserUpdateRequest): Promise<IUserResponse> {
     try {
@@ -310,6 +346,11 @@ export class AuthController {
     }
   }
 
+  /**
+   * Authenticate via OAuth (Google or GitHub).
+   * Creates account if first login, links provider if email exists.
+   * OAuth users are auto-verified.
+   */
   @GrpcMethod('AuthService', 'OAuthLogin')
   async oAuthLogin(data: IOAuthLoginRequest): Promise<IAuthResponse> {
     try {
@@ -376,6 +417,10 @@ export class AuthController {
     }
   }
 
+  /**
+   * Request password reset email.
+   * Returns success even if email not found (security: don't reveal user existence).
+   */
   @GrpcMethod('AuthService', 'RequestPasswordReset')
   async requestPasswordReset(data: IPasswordResetRequest): Promise<IPasswordResetResponse> {
     try {
@@ -389,7 +434,7 @@ export class AuthController {
       }
 
       const token = await this.tokenService.generatePasswordResetToken(user.id);
-      
+
       // TODO: Get frontend URL from config
       const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
       await this.emailService.sendPasswordResetEmail(user.email, user.name, resetLink);
@@ -409,6 +454,10 @@ export class AuthController {
     }
   }
 
+  /**
+   * Set new password using reset token.
+   * Invalidates all existing sessions after password change.
+   */
   @GrpcMethod('AuthService', 'ResetPassword')
   async resetPassword(data: IResetPasswordConfirmRequest): Promise<IResetPasswordConfirmResponse> {
     try {
