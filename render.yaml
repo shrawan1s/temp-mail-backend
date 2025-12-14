@@ -3,8 +3,8 @@ services:
     name: temp-email-auth-service
     plan: free
     env: docker
-    dockerContext: backend
-    dockerfilePath: backend/auth-service/Dockerfile
+    dockerContext: .
+    dockerfilePath: auth-service/Dockerfile
     envVars:
       - key: PORT
         value: 5001
@@ -49,8 +49,8 @@ services:
     name: temp-email-gateway
     plan: free
     env: docker
-    dockerContext: backend
-    dockerfilePath: backend/gateway/Dockerfile
+    dockerContext: .
+    dockerfilePath: gateway/Dockerfile
     envVars:
       - key: PORT
         value: 5000
