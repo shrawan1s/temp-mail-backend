@@ -391,7 +391,7 @@ export class AuthController {
       const token = await this.tokenService.generatePasswordResetToken(user.id);
       
       // TODO: Get frontend URL from config
-      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+      const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
       await this.emailService.sendPasswordResetEmail(user.email, user.name, resetLink);
 
       this.logger.log(`Password reset requested for: ${user.email}`);

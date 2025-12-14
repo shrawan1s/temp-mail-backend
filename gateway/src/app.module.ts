@@ -42,7 +42,7 @@ import { HealthModule } from './modules/health/health.module';
           options: {
             package: 'auth',
             protoPath: join(__dirname, '../../proto/auth.proto'),
-            url: configService.get<string>('AUTH_SERVICE_URL') || 'localhost:5001',
+            url: configService.get<string>('AUTH_SERVICE_URL'),
             credentials: credentials.createInsecure(),
             loader: {
               keepCase: true,
