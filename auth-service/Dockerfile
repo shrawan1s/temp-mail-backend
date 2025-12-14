@@ -2,6 +2,9 @@ FROM node:22-alpine
 
 WORKDIR /app
 
+# Install OpenSSL (required for Prisma on Alpine)
+RUN apk add --no-cache openssl
+
 # Copy the shared proto directory
 COPY proto /app/proto
 
