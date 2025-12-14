@@ -1,6 +1,7 @@
 services:
   - type: web
     name: temp-email-auth-service
+    plan: free
     env: docker
     dockerContext: backend
     dockerfilePath: backend/auth-service/Dockerfile
@@ -26,6 +27,7 @@ services:
 
   - type: web
     name: temp-email-gateway
+    plan: free
     env: docker
     dockerContext: backend
     dockerfilePath: backend/gateway/Dockerfile
