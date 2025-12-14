@@ -4,6 +4,7 @@ import { UserService } from '../user';
 import { TokenService } from '../token';
 import { OAuthService } from '../oauth';
 import { EmailService } from '../email';
+import { AUTH_MESSAGES } from '../constants';
 import {
   IAuthResponse,
   IGetUserRequest,
@@ -58,7 +59,7 @@ export class AuthController {
       if (existingUser) {
         return {
           success: false,
-          message: 'User with this email already exists',
+          message: AUTH_MESSAGES.USER_ALREADY_EXISTS,
         };
       }
 
@@ -77,14 +78,14 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'Registration successful. Please check your email for verification code.',
+        message: AUTH_MESSAGES.REGISTER_SUCCESS,
         user_id: user.id,
       };
     } catch (error) {
       this.logger.error('Registration error:', error);
       return {
         success: false,
-        message: 'Registration failed',
+        message: AUTH_MESSAGES.REGISTER_FAILED,
       };
     }
   }
@@ -97,7 +98,7 @@ export class AuthController {
       if (!result.success || !result.user) {
         return {
           success: false,
-          message: 'Invalid or expired verification code',
+          message: AUTH_MESSAGES.VERIFY_INVALID_CODE,
         };
       }
 
@@ -107,7 +108,7 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'Email verified successfully',
+        message: AUTH_MESSAGES.VERIFY_SUCCESS,
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken,
         user: this.toUserDto(result.user),
@@ -116,7 +117,7 @@ export class AuthController {
       this.logger.error('Verify email error:', error);
       return {
         success: false,
-        message: 'Email verification failed',
+        message: AUTH_MESSAGES.VERIFY_FAILED,
       };
     }
   }
@@ -129,7 +130,7 @@ export class AuthController {
       if (!result.success || !result.user || !result.code) {
         return {
           success: true, // Don't reveal whether email exists
-          message: 'If the email exists and is not verified, a new code will be sent',
+          message: AUTH_MESSAGES.RESEND_CODE_HINT,
         };
       }
 
@@ -139,13 +140,13 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'Verification code sent',
+        message: AUTH_MESSAGES.RESEND_CODE_SUCCESS,
       };
     } catch (error) {
       this.logger.error('Resend verification error:', error);
       return {
         success: false,
-        message: 'Failed to resend verification code',
+        message: AUTH_MESSAGES.RESEND_CODE_FAILED,
       };
     }
   }
@@ -157,7 +158,7 @@ export class AuthController {
       if (!user) {
         return {
           success: false,
-          message: 'Invalid email or password',
+          message: AUTH_MESSAGES.INVALID_CREDENTIALS,
         };
       }
 
@@ -165,7 +166,7 @@ export class AuthController {
       if (!user.isVerified) {
         return {
           success: false,
-          message: 'Please verify your email before logging in',
+          message: AUTH_MESSAGES.EMAIL_NOT_VERIFIED,
         };
       }
 
@@ -173,7 +174,7 @@ export class AuthController {
       if (!isValid) {
         return {
           success: false,
-          message: 'Invalid email or password',
+          message: AUTH_MESSAGES.INVALID_CREDENTIALS,
         };
       }
 
@@ -183,7 +184,7 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'Login successful',
+        message: AUTH_MESSAGES.LOGIN_SUCCESS,
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken,
         user: this.toUserDto(user),
@@ -192,7 +193,7 @@ export class AuthController {
       this.logger.error('Login error:', error);
       return {
         success: false,
-        message: 'Login failed',
+        message: AUTH_MESSAGES.LOGIN_FAILED,
       };
     }
   }
@@ -206,13 +207,13 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'Logout successful',
+        message: AUTH_MESSAGES.LOGOUT_SUCCESS,
       };
     } catch (error) {
       this.logger.error('Logout error:', error);
       return {
         success: false,
-        message: 'Logout failed',
+        message: AUTH_MESSAGES.LOGOUT_FAILED,
       };
     }
   }
@@ -224,13 +225,13 @@ export class AuthController {
       if (!tokens) {
         return {
           success: false,
-          message: 'Invalid or expired refresh token',
+          message: AUTH_MESSAGES.INVALID_REFRESH_TOKEN,
         };
       }
 
       return {
         success: true,
-        message: 'Token refreshed',
+        message: AUTH_MESSAGES.TOKEN_REFRESHED,
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken,
       };
@@ -238,7 +239,7 @@ export class AuthController {
       this.logger.error('Token refresh error:', error);
       return {
         success: false,
-        message: 'Token refresh failed',
+        message: AUTH_MESSAGES.TOKEN_REFRESH_FAILED,
       };
     }
   }
@@ -268,20 +269,20 @@ export class AuthController {
       if (!user) {
         return {
           success: false,
-          message: 'User not found',
+          message: AUTH_MESSAGES.USER_NOT_FOUND,
         };
       }
 
       return {
         success: true,
-        message: 'User found',
+        message: AUTH_MESSAGES.USER_FOUND,
         user: this.toUserDto(user),
       };
     } catch (error) {
       this.logger.error('Get user error:', error);
       return {
         success: false,
-        message: 'Failed to get user',
+        message: AUTH_MESSAGES.USER_GET_FAILED,
       };
     }
   }
@@ -297,14 +298,14 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'User updated',
+        message: AUTH_MESSAGES.USER_UPDATED,
         user: this.toUserDto(user),
       };
     } catch (error) {
       this.logger.error('Update user error:', error);
       return {
         success: false,
-        message: 'Failed to update user',
+        message: AUTH_MESSAGES.USER_UPDATE_FAILED,
       };
     }
   }
@@ -321,14 +322,14 @@ export class AuthController {
       } else {
         return {
           success: false,
-          message: 'Unsupported OAuth provider',
+          message: AUTH_MESSAGES.OAUTH_UNSUPPORTED_PROVIDER,
         };
       }
 
       if (!oauthUser) {
         return {
           success: false,
-          message: 'OAuth authentication failed',
+          message: AUTH_MESSAGES.OAUTH_FAILED,
         };
       }
 
@@ -361,7 +362,7 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'OAuth login successful',
+        message: AUTH_MESSAGES.OAUTH_SUCCESS,
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken,
         user: this.toUserDto(user),
@@ -370,7 +371,7 @@ export class AuthController {
       this.logger.error('OAuth login error:', error);
       return {
         success: false,
-        message: 'OAuth login failed',
+        message: AUTH_MESSAGES.OAUTH_LOGIN_FAILED,
       };
     }
   }
@@ -383,7 +384,7 @@ export class AuthController {
       if (!user) {
         return {
           success: true,
-          message: 'If the email exists, a password reset link will be sent',
+          message: AUTH_MESSAGES.PASSWORD_RESET_HINT,
         };
       }
 
@@ -397,13 +398,13 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'If the email exists, a password reset link will be sent',
+        message: AUTH_MESSAGES.PASSWORD_RESET_HINT,
       };
     } catch (error) {
       this.logger.error('Password reset request error:', error);
       return {
         success: false,
-        message: 'Password reset request failed',
+        message: AUTH_MESSAGES.PASSWORD_RESET_REQUEST_FAILED,
       };
     }
   }
@@ -415,7 +416,7 @@ export class AuthController {
       if (!userId) {
         return {
           success: false,
-          message: 'Invalid or expired reset token',
+          message: AUTH_MESSAGES.INVALID_RESET_TOKEN,
         };
       }
 
@@ -427,13 +428,13 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'Password reset successful',
+        message: AUTH_MESSAGES.PASSWORD_RESET_SUCCESS,
       };
     } catch (error) {
       this.logger.error('Password reset error:', error);
       return {
         success: false,
-        message: 'Password reset failed',
+        message: AUTH_MESSAGES.PASSWORD_RESET_FAILED,
       };
     }
   }
