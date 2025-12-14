@@ -12,8 +12,8 @@ WORKDIR /app/auth-service
 
 # Install dependencies and build
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
-RUN pnpm build
 RUN npx prisma generate
+RUN pnpm build
 
 # Expose the port (Auth Service uses GRPC usually on a specific port, checks .env)
 # But for Docker we might defaults.
