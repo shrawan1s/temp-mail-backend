@@ -32,7 +32,7 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
   
-  const port = configService.get<number>('app.port') || 5001;
+  const port = configService.get<number>('app.port', 5001);
   await app.listen(port);
   logger.log(`🔐 Auth Service running on port ${port} (HTTP) and ${configService.get('app.grpcUrl')} (gRPC)`);
 }

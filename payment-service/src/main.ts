@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import 'newrelic';
 
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
