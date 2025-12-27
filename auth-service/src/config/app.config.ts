@@ -1,7 +1,6 @@
 import { registerAs } from '@nestjs/config';
 
 export default registerAs('app', () => ({
-  port: parseInt(process.env.PORT || '5001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   grpcUrl: process.env.AUTH_GRPC_URL || '0.0.0.0:5001',
   
@@ -23,5 +22,4 @@ export default registerAs('app', () => ({
   
   // URLs
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
-  backendUrl: process.env.BACKEND_URL || 'http://localhost:5001',
 }));

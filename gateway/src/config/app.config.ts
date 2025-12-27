@@ -7,7 +7,8 @@ export default registerAs('app', () => ({
   
   // Service URLs (gRPC)
   authServiceUrl: process.env.AUTH_SERVICE_URL || '0.0.0.0:5001',
-  paymentServiceUrl: process.env.PAYMENT_SERVICE_URL || '0.0.0.0:5004',
+  paymentServiceUrl: process.env.PAYMENT_SERVICE_URL || '0.0.0.0:5002',
+  mailboxServiceUrl: process.env.MAILBOX_SERVICE_URL || '0.0.0.0:5003',
   
   // Redis
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
