@@ -128,6 +128,8 @@ model Subscription {
 model Payment {
   id              String   @id @default(uuid())
   userId          String
+  planId          String
+  billingCycle    String   // "monthly" | "annual"
   razorpayOrderId String   @unique
   razorpayPayId   String?
   amount          Int      // in paise
