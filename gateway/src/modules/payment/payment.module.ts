@@ -1,25 +1,27 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { join } from 'path';
 import { PaymentController } from './payment.controller';
-import { PaymentService } from './payment.service';
+import { join } from 'path';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    ClientsModule.register([
+    ClientsModule.registerAsync([
       {
         name: 'PAYMENT_PACKAGE',
-        transport: Transport.GRPC,
-        options: {
-          package: 'payment',
-          protoPath: join(__dirname, '../../../../proto/payment.proto'),
-          url: process.env.PAYMENT_SERVICE_URL,
-        },
+        imports: [ConfigModule],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'payment',
+            protoPath: join(__dirname, '../../proto/payment.proto'),
+            url: configService.get('app.paymentServiceUrl'),
+          },
+        }),
+        inject: [ConfigService],
       },
     ]),
   ],
   controllers: [PaymentController],
-  providers: [PaymentService],
-  exports: [ClientsModule],
 })
-export class PaymentModule { }
+export class PaymentModule {}
