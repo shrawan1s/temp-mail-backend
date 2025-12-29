@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma';
 import { RazorpayService } from './razorpay.service';
+import { PAYMENT_MESSAGES } from './constants';
 
 @Injectable()
 export class PaymentService {
@@ -35,12 +36,27 @@ export class PaymentService {
   async createOrder(userId: string, planId: string, billingCycle: string) {
     const plan = await this.prisma.plan.findUnique({ where: { id: planId } });
     if (!plan) {
-      throw new Error('Plan not found');
+      throw new Error(PAYMENT_MESSAGES.PLAN_NOT_FOUND);
     }
 
     const amount = billingCycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
     if (amount === 0) {
-      throw new Error('Cannot create order for free plan');
+      throw new Error(PAYMENT_MESSAGES.ORDER_FREE_PLAN_ERROR);
+    }
+
+    // Check if user already has active subscription for same or higher tier plan
+    const existingSubscription = await this.prisma.subscription.findUnique({
+      where: { userId },
+      include: { plan: true },
+    });
+
+    if (existingSubscription && existingSubscription.status === 'active') {
+      const currentPlan = existingSubscription.plan;
+      const tierOrder: Record<string, number> = { 'free': 0, 'pro': 1, 'business': 2 };
+
+      if (tierOrder[plan.key] <= tierOrder[currentPlan.key]) {
+        throw new Error(`${PAYMENT_MESSAGES.ORDER_ALREADY_SUBSCRIBED} ${currentPlan.name}. ${PAYMENT_MESSAGES.ORDER_DOWNGRADE_NOT_ALLOWED}`);
+      }
     }
 
     const order = await this.razorpayService.createOrder(amount);
@@ -57,7 +73,7 @@ export class PaymentService {
       },
     });
 
-    this.logger.log(`Order created: ${order.id} for user ${userId}, plan ${plan.key}`);
+    this.logger.log(`${PAYMENT_MESSAGES.ORDER_CREATED}: ${order.id} for user ${userId}, plan ${plan.key}`);
 
     return {
       orderId: order.id,
@@ -70,8 +86,8 @@ export class PaymentService {
   async verifyPayment(orderId: string, paymentId: string, signature: string, userId: string) {
     const isValid = this.razorpayService.verifySignature(orderId, paymentId, signature);
     if (!isValid) {
-      this.logger.warn(`Invalid payment signature for order ${orderId}`);
-      return { success: false, message: 'Invalid signature' };
+      this.logger.warn(`${PAYMENT_MESSAGES.PAYMENT_INVALID_SIGNATURE} for order ${orderId}`);
+      return { success: false, message: PAYMENT_MESSAGES.PAYMENT_INVALID_SIGNATURE };
     }
 
     // Get the payment record to retrieve planId and billingCycle
@@ -80,7 +96,19 @@ export class PaymentService {
     });
 
     if (!payment) {
-      return { success: false, message: 'Payment record not found' };
+      return { success: false, message: PAYMENT_MESSAGES.PAYMENT_RECORD_NOT_FOUND };
+    }
+
+    // Validate that the payment belongs to the user verifying
+    if (payment.userId !== userId) {
+      this.logger.warn(`${PAYMENT_MESSAGES.PAYMENT_USER_MISMATCH}: expected ${payment.userId}, got ${userId}`);
+      return { success: false, message: PAYMENT_MESSAGES.PAYMENT_USER_MISMATCH };
+    }
+
+    // Check if payment was already verified
+    if (payment.status === 'success') {
+      this.logger.warn(`${PAYMENT_MESSAGES.PAYMENT_ALREADY_VERIFIED}: ${orderId}`);
+      return { success: false, message: PAYMENT_MESSAGES.PAYMENT_ALREADY_VERIFIED };
     }
 
     // Get the plan details
@@ -89,7 +117,7 @@ export class PaymentService {
     });
 
     if (!plan) {
-      return { success: false, message: 'Plan not found' };
+      return { success: false, message: PAYMENT_MESSAGES.PLAN_NOT_FOUND };
     }
 
     // Calculate subscription expiry date
@@ -136,30 +164,36 @@ export class PaymentService {
       });
     });
 
-    this.logger.log(`Payment verified: ${orderId}, User ${userId} upgraded to ${plan.key}`);
+    this.logger.log(`${PAYMENT_MESSAGES.PAYMENT_VERIFIED}: ${orderId}, User ${userId} upgraded to ${plan.key}`);
 
-    return { 
-      success: true, 
-      message: 'Payment verified successfully',
+    return {
+      success: true,
+      message: PAYMENT_MESSAGES.PAYMENT_VERIFIED,
       planKey: plan.key,
       expiresAt: expiresAt.toISOString(),
     };
   }
 
   async getSubscription(userId: string) {
+    // Return free plan if no userId provided
+    if (!userId) {
+      return { planKey: 'free', planName: 'Free', status: 'active', billingCycle: 'monthly', expiresAt: '' };
+    }
+
     const subscription = await this.prisma.subscription.findUnique({
       where: { userId },
       include: { plan: true },
     });
 
     if (!subscription) {
-      return { planKey: 'free', planName: 'Free', status: 'active', expiresAt: '' };
+      return { planKey: 'free', planName: 'Free', status: 'active', billingCycle: 'monthly', expiresAt: '' };
     }
 
     return {
       planKey: subscription.plan.key,
       planName: subscription.plan.name,
       status: subscription.status,
+      billingCycle: subscription.billingCycle,
       expiresAt: subscription.expiresAt.toISOString(),
     };
   }
