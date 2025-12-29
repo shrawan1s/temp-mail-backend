@@ -1,4 +1,5 @@
 import { Controller, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { GrpcMethod } from '@nestjs/microservices';
 import { UserService } from '../user';
 import { TokenService } from '../token';
@@ -43,6 +44,7 @@ export class AuthController {
     private tokenService: TokenService,
     private oauthService: OAuthService,
     private emailService: EmailService,
+    private configService: ConfigService,
   ) { }
 
   /** Convert Prisma User model to DTO for gRPC response */
@@ -435,8 +437,8 @@ export class AuthController {
 
       const token = await this.tokenService.generatePasswordResetToken(user.id);
 
-      // TODO: Get frontend URL from config
-      const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+      const frontendUrl = this.configService.get<string>('app.frontendUrl');
+      const resetLink = `${frontendUrl}/reset-password?token=${token}`;
       await this.emailService.sendPasswordResetEmail(user.email, user.name, resetLink);
 
       this.logger.log(`Password reset requested for: ${user.email}`);

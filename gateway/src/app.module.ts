@@ -41,8 +41,8 @@ import { HealthModule } from './modules/health/health.module';
           transport: Transport.GRPC,
           options: {
             package: 'auth',
-            protoPath: join(__dirname, '../../proto/auth.proto'),
-            url: configService.get<string>('AUTH_SERVICE_URL'),
+            protoPath: join(__dirname, 'proto/auth.proto'),
+            url: configService.get<string>('app.authServiceUrl'),
             credentials: credentials.createInsecure(),
             loader: {
               keepCase: true,

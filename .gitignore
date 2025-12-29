@@ -31,6 +31,7 @@ Thumbs.db
 .classpath
 .project
 .c9/
+docs
 
 # Keep common VSCode project files
 !.vscode/settings.json

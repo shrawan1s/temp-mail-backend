@@ -9,7 +9,7 @@ import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const logger = new Logger('AuthService');
+  const logger = new Logger('PaymentService');
 
   // Create app context first to get ConfigService
   const appContext = await NestFactory.createApplicationContext(AppModule);
@@ -21,21 +21,14 @@ async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
     transport: Transport.GRPC,
     options: {
-      package: 'auth',
-      protoPath: join(__dirname, 'proto/auth.proto'),
+      package: 'payment',
+      protoPath: join(__dirname, 'proto/payment.proto'),
       url: grpcUrl,
-      loader: {
-        keepCase: true,
-        longs: String,
-        enums: String,
-        defaults: true,
-        oneofs: true,
-      },
     },
   });
 
   await app.listen();
-  logger.log(`🔐 Auth Service running on ${grpcUrl} (gRPC)`);
+  logger.log(`💳 Payment Service running on ${grpcUrl} (gRPC)`);
 }
 
 bootstrap();

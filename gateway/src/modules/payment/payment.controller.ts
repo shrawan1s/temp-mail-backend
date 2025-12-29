@@ -1,152 +1,48 @@
-import {
-    Controller,
-    Get,
-    Post,
-    Body,
-    Param,
-    Query,
-    Headers,
-    RawBodyRequest,
-    Req,
-    HttpCode,
-    HttpStatus,
-} from '@nestjs/common';
-import { Request } from 'express';
-import { PaymentService } from './payment.service';
-import { CurrentUser } from '../../common/decorators';
+import { Controller, Get, Post, Body, OnModuleInit, Inject, Request } from '@nestjs/common';
+import { ClientGrpc } from '@nestjs/microservices';
+import { Observable } from 'rxjs';
 import { Public } from '../../common/decorators';
-import {
-    CreateCheckoutDto,
-    CancelSubscriptionDto,
-    ChangePlanDto,
-    BillingHistoryQueryDto,
-    CreatePortalSessionDto,
-} from './dto';
-import { ICurrentUserData } from 'src/common/interfaces';
 
-@Controller('payments')
-export class PaymentController {
-    constructor(private readonly paymentService: PaymentService) { }
+interface PaymentService {
+  GetPlans(data: {}): Observable<any>;
+  CreateOrder(data: any): Observable<any>;
+  VerifyPayment(data: any): Observable<any>;
+  GetSubscription(data: any): Observable<any>;
+}
 
-    @Public()
-    @Get('plans')
-    async getPlans(@Query('currency') currency?: string) {
-        return this.paymentService.getPlans({ currency });
-    }
+@Controller('payment')
+export class PaymentController implements OnModuleInit {
+  private paymentService: PaymentService;
 
-    @Get('subscription')
-    async getSubscription(@CurrentUser() user: ICurrentUserData) {
-        return this.paymentService.getSubscription({
-            userId: user.userId,
-        });
-    }
+  constructor(@Inject('PAYMENT_PACKAGE') private client: ClientGrpc) {}
 
-    @Post('checkout')
-    async createCheckout(
-        @CurrentUser() user: ICurrentUserData,
-        @Body() dto: CreateCheckoutDto,
-    ) {
-        return this.paymentService.createCheckoutSession({
-            userId: user.userId,
-            planId: dto.planId,
-            successUrl: dto.successUrl,
-            cancelUrl: dto.cancelUrl,
-            paymentProvider: dto.paymentProvider,
-        });
-    }
+  onModuleInit() {
+    this.paymentService = this.client.getService<PaymentService>('PaymentService');
+  }
 
-    @Post('subscription/cancel')
-    @HttpCode(HttpStatus.OK)
-    async cancelSubscription(
-        @CurrentUser() user: ICurrentUserData,
-        @Body() dto: CancelSubscriptionDto,
-    ) {
-        return this.paymentService.cancelSubscription({
-            userId: user.userId,
-            immediate: dto.immediate ?? false,
-        });
-    }
+  /** GET /payment/plans - Get all available plans (public) */
+  @Public()
+  @Get('plans')
+  getPlans() {
+    return this.paymentService.GetPlans({});
+  }
 
-    @Post('subscription/resume')
-    @HttpCode(HttpStatus.OK)
-    async resumeSubscription(@CurrentUser() user: ICurrentUserData) {
-        return this.paymentService.resumeSubscription({
-            userId: user.userId,
-        });
-    }
+  /** POST /payment/create-order - Create a Razorpay order */
+  @Post('create-order')
+  createOrder(@Body() body: { userId: string; planId: string; billingCycle: string }) {
+    return this.paymentService.CreateOrder(body);
+  }
 
-    @Post('subscription/change-plan')
-    @HttpCode(HttpStatus.OK)
-    async changePlan(
-        @CurrentUser() user: ICurrentUserData,
-        @Body() dto: ChangePlanDto,
-    ) {
-        return this.paymentService.changePlan({
-            userId: user.userId,
-            newPlanId: dto.newPlanId,
-            prorate: dto.prorate ?? true,
-        });
-    }
+  /** POST /payment/verify - Verify payment after Razorpay checkout */
+  @Post('verify')
+  verifyPayment(@Body() body: { orderId: string; paymentId: string; signature: string; userId: string }) {
+    return this.paymentService.VerifyPayment(body);
+  }
 
-    @Get('billing-history')
-    async getBillingHistory(
-        @CurrentUser() user: ICurrentUserData,
-        @Query() query: BillingHistoryQueryDto,
-    ) {
-        return this.paymentService.getBillingHistory({
-            userId: user.userId,
-            limit: query.limit,
-            offset: query.offset,
-        });
-    }
-
-    @Get('invoices/:invoiceId')
-    async getInvoice(
-        @CurrentUser() user: ICurrentUserData,
-        @Param('invoiceId') invoiceId: string,
-    ) {
-        return this.paymentService.getInvoice({
-            invoiceId,
-            userId: user.userId,
-        });
-    }
-
-    @Post('portal')
-    async createPortalSession(
-        @CurrentUser() user: ICurrentUserData,
-        @Body() dto: CreatePortalSessionDto,
-    ) {
-        return this.paymentService.createPortalSession({
-            userId: user.userId,
-            returnUrl: dto.returnUrl,
-        });
-    }
-
-    @Public()
-    @Post('webhooks/stripe')
-    @HttpCode(HttpStatus.OK)
-    async handleStripeWebhook(
-        @Req() req: RawBodyRequest<Request>,
-        @Headers('stripe-signature') signature: string,
-    ) {
-        const payload = req.rawBody?.toString() || '';
-        return this.paymentService.handleStripeWebhook({
-            payload,
-            signature,
-        });
-    }
-
-    @Public()
-    @Post('webhooks/razorpay')
-    @HttpCode(HttpStatus.OK)
-    async handleRazorpayWebhook(
-        @Req() req: RawBodyRequest<Request>,
-        @Headers('x-razorpay-signature') signature: string,
-    ) {
-        const payload = req.rawBody?.toString() || '';
-        return this.paymentService.handleRazorpayWebhook({
-            payload,
-            signature,
-        });
-    }
+  /** GET /payment/subscription - Get user's subscription (uses userId from JWT token) */
+  @Get('subscription')
+  getSubscription(@Request() req: any) {
+    const userId = req.user?.userId;
+    return this.paymentService.GetSubscription({ userId });
+  }
 }

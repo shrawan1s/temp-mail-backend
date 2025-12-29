@@ -1,4 +1,4 @@
-// Prisma Schema for Auth Service
+// Shared Prisma Schema for all services
 // PostgreSQL database
 
 generator client {
@@ -11,7 +11,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model
+// ============================================
+// AUTH MODELS
+// ============================================
+
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
@@ -41,7 +44,6 @@ model User {
   @@map("users")
 }
 
-// Refresh Tokens
 model RefreshToken {
   id          String   @id @default(uuid())
   token       String   @unique
@@ -55,7 +57,6 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
-// Password Reset Tokens
 model PasswordReset {
   id          String   @id @default(uuid())
   token       String   @unique
@@ -70,7 +71,6 @@ model PasswordReset {
   @@map("password_resets")
 }
 
-// User Sessions (for tracking active sessions)
 model Session {
   id          String   @id @default(uuid())
   userId      String
@@ -84,4 +84,57 @@ model Session {
   @@index([userId])
   @@index([accessToken])
   @@map("sessions")
+}
+
+// ============================================
+// PAYMENT MODELS
+// ============================================
+
+model Plan {
+  id             String   @id @default(uuid())
+  key            String   @unique // "free" | "pro" | "business"
+  name           String   // "Free" | "Pro" | "Business"
+  description    String?
+  priceMonthly   Int      @default(0) // in paise (74900 = ₹749)
+  priceAnnual    Int      @default(0) // in paise
+  features       String[] // ["Feature 1", "Feature 2"]
+  isActive       Boolean  @default(true)
+  isPopular      Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  subscriptions  Subscription[]
+  
+  @@map("plans")
+}
+
+model Subscription {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  planId        String
+  plan          Plan     @relation(fields: [planId], references: [id])
+  billingCycle  String   // "monthly" | "annual"
+  status        String   @default("active") // "active" | "cancelled" | "expired"
+  razorpaySubId String?
+  startedAt     DateTime @default(now())
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@map("subscriptions")
+}
+
+model Payment {
+  id              String   @id @default(uuid())
+  userId          String
+  planId          String
+  billingCycle    String   // "monthly" | "annual"
+  razorpayOrderId String   @unique
+  razorpayPayId   String?
+  amount          Int      // in paise
+  status          String   @default("pending") // "pending" | "success" | "failed"
+  createdAt       DateTime @default(now())
+  
+  @@map("payments")
 }
