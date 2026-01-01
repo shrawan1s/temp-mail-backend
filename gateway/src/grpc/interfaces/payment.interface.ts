@@ -167,3 +167,66 @@ export interface CreatePortalSessionResponse {
   message: string;
   portalUrl?: string;
 }
+
+// ============= Razorpay Specific Interfaces =============
+
+export interface RazorpayPaymentServiceClient {
+  GetPlans(data: Record<string, never>): Observable<RazorpayGetPlansResponse>;
+  CreateOrder(data: RazorpayCreateOrderRequest): Observable<RazorpayCreateOrderResponse>;
+  VerifyPayment(data: RazorpayVerifyPaymentRequest): Observable<RazorpayVerifyPaymentResponse>;
+  GetSubscription(data: RazorpayGetSubscriptionRequest): Observable<RazorpaySubscriptionResponse>;
+}
+
+export interface RazorpayPlan {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  priceMonthly: number;
+  priceAnnual: number;
+  features: string[];
+  isPopular: boolean;
+}
+
+export interface RazorpayGetPlansResponse {
+  plans: RazorpayPlan[];
+}
+
+export interface RazorpayCreateOrderRequest {
+  userId: string;
+  planId: string;
+  billingCycle: string;
+}
+
+export interface RazorpayCreateOrderResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+  razorpayKeyId: string;
+}
+
+export interface RazorpayVerifyPaymentRequest {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+  userId: string;
+}
+
+export interface RazorpayVerifyPaymentResponse {
+  success: boolean;
+  message: string;
+  planKey?: string;
+  expiresAt?: string;
+}
+
+export interface RazorpayGetSubscriptionRequest {
+  userId: string;
+}
+
+export interface RazorpaySubscriptionResponse {
+  planKey: string;
+  planName: string;
+  status: string;
+  billingCycle: string;
+  expiresAt: string;
+}

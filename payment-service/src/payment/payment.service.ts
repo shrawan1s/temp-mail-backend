@@ -3,7 +3,18 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma';
 import { RazorpayService } from './razorpay.service';
 import { PAYMENT_MESSAGES } from './constants';
+import {
+  ICreateOrderResponse,
+  IGetPlansResponse,
+  ISubscriptionResponse,
+  IVerifyPaymentResponse,
+  PLAN_TIER_ORDER,
+} from '../interfaces';
 
+/**
+ * Service for managing payment operations.
+ * Handles plans, orders, payment verification, and subscriptions.
+ */
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
@@ -12,9 +23,13 @@ export class PaymentService {
     private prisma: PrismaService,
     private razorpayService: RazorpayService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
-  async getPlans() {
+  /**
+   * Fetch all active subscription plans.
+   * Returns plans sorted by sortOrder for consistent display.
+   */
+  async getPlans(): Promise<IGetPlansResponse> {
     const plans = await this.prisma.plan.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
@@ -33,7 +48,18 @@ export class PaymentService {
     };
   }
 
-  async createOrder(userId: string, planId: string, billingCycle: string) {
+  /**
+   * Create a Razorpay order for plan subscription.
+   * Validates plan exists, checks for downgrades, and creates payment record.
+   * @param userId - The ID of the user making the purchase
+   * @param planId - The ID of the plan to subscribe to
+   * @param billingCycle - 'monthly' or 'annual' billing cycle
+   */
+  async createOrder(
+    userId: string,
+    planId: string,
+    billingCycle: string,
+  ): Promise<ICreateOrderResponse> {
     const plan = await this.prisma.plan.findUnique({ where: { id: planId } });
     if (!plan) {
       throw new Error(PAYMENT_MESSAGES.PLAN_NOT_FOUND);
@@ -52,10 +78,13 @@ export class PaymentService {
 
     if (existingSubscription && existingSubscription.status === 'active') {
       const currentPlan = existingSubscription.plan;
-      const tierOrder: Record<string, number> = { 'free': 0, 'pro': 1, 'business': 2 };
+      const currentTier = PLAN_TIER_ORDER[currentPlan.key] ?? 0;
+      const newTier = PLAN_TIER_ORDER[plan.key] ?? 0;
 
-      if (tierOrder[plan.key] <= tierOrder[currentPlan.key]) {
-        throw new Error(`${PAYMENT_MESSAGES.ORDER_ALREADY_SUBSCRIBED} ${currentPlan.name}. ${PAYMENT_MESSAGES.ORDER_DOWNGRADE_NOT_ALLOWED}`);
+      if (newTier <= currentTier) {
+        throw new Error(
+          `${PAYMENT_MESSAGES.ORDER_ALREADY_SUBSCRIBED} ${currentPlan.name}. ${PAYMENT_MESSAGES.ORDER_DOWNGRADE_NOT_ALLOWED}`,
+        );
       }
     }
 
@@ -73,17 +102,32 @@ export class PaymentService {
       },
     });
 
-    this.logger.log(`${PAYMENT_MESSAGES.ORDER_CREATED}: ${order.id} for user ${userId}, plan ${plan.key}`);
+    this.logger.log(
+      `${PAYMENT_MESSAGES.ORDER_CREATED}: ${order.id} for user ${userId}, plan ${plan.key}`,
+    );
 
     return {
       orderId: order.id,
       amount,
       currency: 'INR',
-      razorpayKeyId: this.configService.get<string>('app.razorpayKeyId'),
+      razorpayKeyId: this.configService.get<string>('app.razorpayKeyId') || '',
     };
   }
 
-  async verifyPayment(orderId: string, paymentId: string, signature: string, userId: string) {
+  /**
+   * Verify Razorpay payment after checkout completion.
+   * Creates/updates subscription and updates user plan on success.
+   * @param orderId - Razorpay order ID
+   * @param paymentId - Razorpay payment ID
+   * @param signature - Razorpay signature for verification
+   * @param userId - ID of the user who made the payment
+   */
+  async verifyPayment(
+    orderId: string,
+    paymentId: string,
+    signature: string,
+    userId: string,
+  ): Promise<IVerifyPaymentResponse> {
     const isValid = this.razorpayService.verifySignature(orderId, paymentId, signature);
     if (!isValid) {
       this.logger.warn(`${PAYMENT_MESSAGES.PAYMENT_INVALID_SIGNATURE} for order ${orderId}`);
@@ -101,7 +145,9 @@ export class PaymentService {
 
     // Validate that the payment belongs to the user verifying
     if (payment.userId !== userId) {
-      this.logger.warn(`${PAYMENT_MESSAGES.PAYMENT_USER_MISMATCH}: expected ${payment.userId}, got ${userId}`);
+      this.logger.warn(
+        `${PAYMENT_MESSAGES.PAYMENT_USER_MISMATCH}: expected ${payment.userId}, got ${userId}`,
+      );
       return { success: false, message: PAYMENT_MESSAGES.PAYMENT_USER_MISMATCH };
     }
 
@@ -164,7 +210,9 @@ export class PaymentService {
       });
     });
 
-    this.logger.log(`${PAYMENT_MESSAGES.PAYMENT_VERIFIED}: ${orderId}, User ${userId} upgraded to ${plan.key}`);
+    this.logger.log(
+      `${PAYMENT_MESSAGES.PAYMENT_VERIFIED}: ${orderId}, User ${userId} upgraded to ${plan.key}`,
+    );
 
     return {
       success: true,
@@ -174,10 +222,21 @@ export class PaymentService {
     };
   }
 
-  async getSubscription(userId: string) {
+  /**
+   * Get user's current subscription details.
+   * Returns free plan if no subscription exists.
+   * @param userId - The ID of the user
+   */
+  async getSubscription(userId: string): Promise<ISubscriptionResponse> {
     // Return free plan if no userId provided
     if (!userId) {
-      return { planKey: 'free', planName: 'Free', status: 'active', billingCycle: 'monthly', expiresAt: '' };
+      return {
+        planKey: 'free',
+        planName: 'Free',
+        status: 'active',
+        billingCycle: 'monthly',
+        expiresAt: '',
+      };
     }
 
     const subscription = await this.prisma.subscription.findUnique({
@@ -186,7 +245,13 @@ export class PaymentService {
     });
 
     if (!subscription) {
-      return { planKey: 'free', planName: 'Free', status: 'active', billingCycle: 'monthly', expiresAt: '' };
+      return {
+        planKey: 'free',
+        planName: 'Free',
+        status: 'active',
+        billingCycle: 'monthly',
+        expiresAt: '',
+      };
     }
 
     return {

@@ -1,5 +1,35 @@
-import { IsString, IsOptional, IsBoolean, IsInt, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsInt, Min, Max, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
+
+// ============= Razorpay DTOs =============
+
+export class CreateOrderDto {
+  @IsString()
+  userId: string;
+
+  @IsString()
+  planId: string;
+
+  @IsString()
+  @IsIn(['monthly', 'annual'])
+  billingCycle: string;
+}
+
+export class VerifyPaymentDto {
+  @IsString()
+  orderId: string;
+
+  @IsString()
+  paymentId: string;
+
+  @IsString()
+  signature: string;
+
+  @IsString()
+  userId: string;
+}
+
+// ============= Stripe/General DTOs =============
 
 export class CreateCheckoutDto {
   @IsString()
