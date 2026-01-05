@@ -7,6 +7,7 @@ import { AuthModule } from './auth';
 import { UserModule } from './user';
 import { TokenModule } from './token';
 import { OAuthModule } from './oauth';
+import { HealthModule } from './health';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { OAuthModule } from './oauth';
     TokenModule,
     OAuthModule,
     AuthModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

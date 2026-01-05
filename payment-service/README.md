@@ -63,6 +63,17 @@ src/
 | `CreateOrder`     | Create Razorpay order for plan purchase | Yes           |
 | `VerifyPayment`   | Verify payment after Razorpay checkout  | Yes           |
 | `GetSubscription` | Get user's current subscription         | Yes           |
+| `HealthCheck`     | Service health status with DB check     | No            |
+
+## HTTP Health Endpoints
+
+For deployment keep-alive and monitoring:
+
+| Endpoint            | Description                    | Response                           |
+| ------------------- | ------------------------------ | ---------------------------------- |
+| `GET /health`       | Basic health check             | `{ status, service, timestamp }`   |
+| `GET /health/ready` | Readiness check (DB connected) | `{ status, database, timestamp }`  |
+| `GET /health/live`  | Liveness check                 | `{ status, timestamp }`            |
 
 ## Payment Flow
 

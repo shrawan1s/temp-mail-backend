@@ -77,6 +77,17 @@ src/
 | `OAuthLogin`             | Authenticate via Google/GitHub           | No            |
 | `RequestPasswordReset`   | Send password reset email                | No            |
 | `ResetPassword`          | Set new password with reset token        | No            |
+| `HealthCheck`            | Service health status with DB check      | No            |
+
+## HTTP Health Endpoints
+
+For deployment keep-alive and monitoring:
+
+| Endpoint        | Description                    | Response                           |
+| --------------- | ------------------------------ | ---------------------------------- |
+| `GET /health`       | Basic health check             | `{ status, service, timestamp }`   |
+| `GET /health/ready` | Readiness check (DB connected) | `{ status, database, timestamp }`  |
+| `GET /health/live`  | Liveness check                 | `{ status, timestamp }`            |
 
 ## Authentication Flow
 
