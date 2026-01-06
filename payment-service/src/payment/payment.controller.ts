@@ -1,6 +1,7 @@
-import { Controller } from '@nestjs/common';
+import { Controller, UseGuards } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { PaymentService } from './payment.service';
+import { InternalKeyGuard } from '../common';
 import {
   ICreateOrderRequest,
   ICreateOrderResponse,
@@ -15,8 +16,10 @@ import {
  * gRPC controller for payment operations.
  * Exposes methods for plan management, order creation, payment verification, and subscriptions.
  * Called by the Gateway service.
+ * Protected by InternalKeyGuard to ensure only authorized services can call.
  */
 @Controller()
+@UseGuards(InternalKeyGuard)
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) { }
 

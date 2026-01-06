@@ -89,6 +89,14 @@ src/
 | POST   | `/api/v1/payments/verify`       | Verify payment after checkout | Yes  |
 | GET    | `/api/v1/payments/subscription` | Get current subscription      | Yes  |
 
+### Health
+
+| Method | Endpoint                  | Description                    | Auth |
+| ------ | ------------------------- | ------------------------------ | ---- |
+| GET    | `/api/v1/health`          | Basic health check             | No   |
+| GET    | `/api/v1/health/ready`    | Readiness check                | No   |
+| GET    | `/api/v1/health/live`     | Liveness check                 | No   |
+
 ## Request/Response Examples
 
 ### Register

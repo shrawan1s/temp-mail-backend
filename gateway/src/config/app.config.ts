@@ -4,6 +4,7 @@ export default registerAs('app', () => ({
   port: parseInt(process.env.PORT || '5000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  internalApiKey: process.env.INTERNAL_API_KEY || '',
   
   // Service URLs (gRPC)
   authServiceUrl: process.env.AUTH_SERVICE_URL || '0.0.0.0:5001',

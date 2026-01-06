@@ -8,6 +8,7 @@ import { credentials } from '@grpc/grpc-js';
 import { appConfig, throttleConfig } from './config';
 import { GlobalExceptionFilter } from './common/filters';
 import { JwtAuthGuard } from './common/guards';
+import { GrpcModule } from './grpc';
 import { AuthModule } from './modules/auth/auth.module';
 import { MailboxModule } from './modules/mailbox/mailbox.module';
 import { PaymentModule } from './modules/payment/payment.module';
@@ -57,6 +58,7 @@ import { HealthModule } from './modules/health/health.module';
     ]),
 
     // Feature Modules
+    GrpcModule,
     AuthModule,
     MailboxModule,
     PaymentModule,

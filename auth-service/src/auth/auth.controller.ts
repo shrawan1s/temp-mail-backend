@@ -1,6 +1,7 @@
-import { Controller } from '@nestjs/common';
+import { Controller, UseGuards } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
+import { InternalKeyGuard } from '../common';
 import {
   IAuthResponse,
   IGetUserRequest,
@@ -28,8 +29,10 @@ import {
  * gRPC controller for authentication operations.
  * Delegates all business logic to AuthService.
  * All methods are exposed via gRPC and called by the Gateway service.
+ * Protected by InternalKeyGuard to ensure only authorized services can call.
  */
 @Controller()
+@UseGuards(InternalKeyGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 

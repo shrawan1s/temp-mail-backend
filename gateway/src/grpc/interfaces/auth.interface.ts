@@ -1,19 +1,20 @@
 import { Observable } from 'rxjs';
+import { Metadata } from '@grpc/grpc-js';
 
 // Auth Service Interfaces
 export interface AuthServiceClient {
-  register(data: RegisterRequest): Observable<RegisterResponse>;
-  verifyEmail(data: VerifyEmailRequest): Observable<AuthResponse>;
-  resendVerificationCode(data: ResendVerificationRequest): Observable<ResendVerificationResponse>;
-  login(data: LoginRequest): Observable<AuthResponse>;
-  logout(data: LogoutRequest): Observable<LogoutResponse>;
-  refreshToken(data: RefreshTokenRequest): Observable<AuthResponse>;
-  validateToken(data: ValidateTokenRequest): Observable<ValidateTokenResponse>;
-  getUser(data: GetUserRequest): Observable<UserResponse>;
-  updateUser(data: UpdateUserRequest): Observable<UserResponse>;
-  oAuthLogin(data: OAuthLoginRequest): Observable<AuthResponse>;
-  requestPasswordReset(data: PasswordResetRequest): Observable<PasswordResetResponse>;
-  resetPassword(data: ResetPasswordConfirmRequest): Observable<ResetPasswordConfirmResponse>;
+  register(data: RegisterRequest, metadata?: Metadata): Observable<RegisterResponse>;
+  verifyEmail(data: VerifyEmailRequest, metadata?: Metadata): Observable<AuthResponse>;
+  resendVerificationCode(data: ResendVerificationRequest, metadata?: Metadata): Observable<ResendVerificationResponse>;
+  login(data: LoginRequest, metadata?: Metadata): Observable<AuthResponse>;
+  logout(data: LogoutRequest, metadata?: Metadata): Observable<LogoutResponse>;
+  refreshToken(data: RefreshTokenRequest, metadata?: Metadata): Observable<AuthResponse>;
+  validateToken(data: ValidateTokenRequest, metadata?: Metadata): Observable<ValidateTokenResponse>;
+  getUser(data: GetUserRequest, metadata?: Metadata): Observable<UserResponse>;
+  updateUser(data: UpdateUserRequest, metadata?: Metadata): Observable<UserResponse>;
+  oAuthLogin(data: OAuthLoginRequest, metadata?: Metadata): Observable<AuthResponse>;
+  requestPasswordReset(data: PasswordResetRequest, metadata?: Metadata): Observable<PasswordResetResponse>;
+  resetPassword(data: ResetPasswordConfirmRequest, metadata?: Metadata): Observable<ResetPasswordConfirmResponse>;
 }
 
 export interface RegisterRequest {

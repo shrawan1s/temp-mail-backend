@@ -1,18 +1,19 @@
 import { Observable } from 'rxjs';
+import { Metadata } from '@grpc/grpc-js';
 
 // Payment Service Interfaces
 export interface PaymentServiceClient {
-  getPlans(data: GetPlansRequest): Observable<GetPlansResponse>;
-  getSubscription(data: GetSubscriptionRequest): Observable<SubscriptionResponse>;
-  createCheckoutSession(data: CreateCheckoutRequest): Observable<CreateCheckoutResponse>;
-  cancelSubscription(data: CancelSubscriptionRequest): Observable<CancelSubscriptionResponse>;
-  resumeSubscription(data: ResumeSubscriptionRequest): Observable<SubscriptionResponse>;
-  changePlan(data: ChangePlanRequest): Observable<SubscriptionResponse>;
-  getBillingHistory(data: GetBillingHistoryRequest): Observable<GetBillingHistoryResponse>;
-  getInvoice(data: GetInvoiceRequest): Observable<InvoiceResponse>;
-  handleStripeWebhook(data: WebhookRequest): Observable<WebhookResponse>;
-  handleRazorpayWebhook(data: WebhookRequest): Observable<WebhookResponse>;
-  createPortalSession(data: CreatePortalSessionRequest): Observable<CreatePortalSessionResponse>;
+  getPlans(data: GetPlansRequest, metadata?: Metadata): Observable<GetPlansResponse>;
+  getSubscription(data: GetSubscriptionRequest, metadata?: Metadata): Observable<SubscriptionResponse>;
+  createCheckoutSession(data: CreateCheckoutRequest, metadata?: Metadata): Observable<CreateCheckoutResponse>;
+  cancelSubscription(data: CancelSubscriptionRequest, metadata?: Metadata): Observable<CancelSubscriptionResponse>;
+  resumeSubscription(data: ResumeSubscriptionRequest, metadata?: Metadata): Observable<SubscriptionResponse>;
+  changePlan(data: ChangePlanRequest, metadata?: Metadata): Observable<SubscriptionResponse>;
+  getBillingHistory(data: GetBillingHistoryRequest, metadata?: Metadata): Observable<GetBillingHistoryResponse>;
+  getInvoice(data: GetInvoiceRequest, metadata?: Metadata): Observable<InvoiceResponse>;
+  handleStripeWebhook(data: WebhookRequest, metadata?: Metadata): Observable<WebhookResponse>;
+  handleRazorpayWebhook(data: WebhookRequest, metadata?: Metadata): Observable<WebhookResponse>;
+  createPortalSession(data: CreatePortalSessionRequest, metadata?: Metadata): Observable<CreatePortalSessionResponse>;
 }
 
 export interface GetPlansRequest {
@@ -171,10 +172,10 @@ export interface CreatePortalSessionResponse {
 // ============= Razorpay Specific Interfaces =============
 
 export interface RazorpayPaymentServiceClient {
-  GetPlans(data: Record<string, never>): Observable<RazorpayGetPlansResponse>;
-  CreateOrder(data: RazorpayCreateOrderRequest): Observable<RazorpayCreateOrderResponse>;
-  VerifyPayment(data: RazorpayVerifyPaymentRequest): Observable<RazorpayVerifyPaymentResponse>;
-  GetSubscription(data: RazorpayGetSubscriptionRequest): Observable<RazorpaySubscriptionResponse>;
+  GetPlans(data: Record<string, never>, metadata?: Metadata): Observable<RazorpayGetPlansResponse>;
+  CreateOrder(data: RazorpayCreateOrderRequest, metadata?: Metadata): Observable<RazorpayCreateOrderResponse>;
+  VerifyPayment(data: RazorpayVerifyPaymentRequest, metadata?: Metadata): Observable<RazorpayVerifyPaymentResponse>;
+  GetSubscription(data: RazorpayGetSubscriptionRequest, metadata?: Metadata): Observable<RazorpaySubscriptionResponse>;
 }
 
 export interface RazorpayPlan {
