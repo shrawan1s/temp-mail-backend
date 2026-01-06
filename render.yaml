@@ -1,5 +1,5 @@
 # Render Deployment Configuration
-# Each service deployed as a separate web service with public URLs
+# Microservices architecture with external PostgreSQL database
 # Services communicate via gRPC over public internet, secured by INTERNAL_API_KEY
 
 services:
@@ -11,6 +11,9 @@ services:
     dockerContext: .
     dockerfilePath: auth-service/Dockerfile
     envVars:
+      # Database (external PostgreSQL)
+      - key: DATABASE_URL
+        sync: false
       # Server
       - key: NODE_ENV
         value: production
@@ -57,6 +60,9 @@ services:
     dockerContext: .
     dockerfilePath: payment-service/Dockerfile
     envVars:
+      # Database (external PostgreSQL - same as auth-service)
+      - key: DATABASE_URL
+        sync: false
       # Server
       - key: NODE_ENV
         value: production
@@ -97,6 +103,7 @@ services:
         value: production
       - key: INTERNAL_API_KEY
         sync: false
+      # gRPC Service URLs
       - key: AUTH_SERVICE_URL
         sync: false
       - key: PAYMENT_SERVICE_URL
