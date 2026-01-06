@@ -1,11 +1,7 @@
-import { Controller, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Controller, UseGuards } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
-import { UserService } from '../user';
-import { TokenService } from '../token';
-import { OAuthService } from '../oauth';
-import { EmailService } from '../email';
-import { AUTH_MESSAGES } from '../constants';
+import { AuthService } from './auth.service';
+import { InternalKeyGuard } from '../common';
 import {
   IAuthResponse,
   IGetUserRequest,
@@ -22,7 +18,6 @@ import {
   IResendVerificationResponse,
   IResetPasswordConfirmRequest,
   IResetPasswordConfirmResponse,
-  IUserDto,
   IUserResponse,
   IUserUpdateRequest,
   IValidateTokenRequest,
@@ -32,191 +27,45 @@ import {
 
 /**
  * gRPC controller for authentication operations.
- * Handles user registration, login, OAuth, email verification, and password reset.
+ * Delegates all business logic to AuthService.
  * All methods are exposed via gRPC and called by the Gateway service.
+ * Protected by InternalKeyGuard to ensure only authorized services can call.
  */
 @Controller()
+@UseGuards(InternalKeyGuard)
 export class AuthController {
-  private readonly logger = new Logger(AuthController.name);
+  constructor(private readonly authService: AuthService) { }
 
-  constructor(
-    private userService: UserService,
-    private tokenService: TokenService,
-    private oauthService: OAuthService,
-    private emailService: EmailService,
-    private configService: ConfigService,
-  ) { }
-
-  /** Convert Prisma User model to DTO for gRPC response */
-  private toUserDto(user: any): IUserDto {
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      avatar_url: user.avatarUrl || '',
-      plan: user.plan,
-      created_at: user.createdAt.toISOString(),
-      updated_at: user.updatedAt.toISOString(),
-    };
-  }
-
-  /** Register a new user and send verification email */
+  /**
+   * Register a new user and send verification email.
+   */
   @GrpcMethod('AuthService', 'Register')
   async register(data: IRegisterRequest): Promise<IRegisterResponse> {
-    try {
-      const existingUser = await this.userService.findByEmail(data.email);
-      if (existingUser) {
-        return {
-          success: false,
-          message: AUTH_MESSAGES.USER_ALREADY_EXISTS,
-        };
-      }
-
-      const user = await this.userService.create({
-        email: data.email,
-        password: data.password,
-        name: data.name,
-      });
-
-      // Send verification email
-      if (user.verificationCode) {
-        await this.emailService.sendVerificationCode(user.email, user.name, user.verificationCode);
-      }
-
-      this.logger.log(`User registered: ${user.email}, verification code sent`);
-
-      return {
-        success: true,
-        message: AUTH_MESSAGES.REGISTER_SUCCESS,
-        user_id: user.id,
-      };
-    } catch (error) {
-      this.logger.error('Registration error:', error);
-      return {
-        success: false,
-        message: AUTH_MESSAGES.REGISTER_FAILED,
-      };
-    }
+    return this.authService.register(data);
   }
 
   /**
    * Verify user email with 6-digit code.
-   * On success: marks email verified, returns tokens and user data.
    */
   @GrpcMethod('AuthService', 'VerifyEmail')
   async verifyEmail(data: IVerifyEmailRequest): Promise<IAuthResponse> {
-    try {
-      const result = await this.userService.verifyEmail(data.user_id, data.code);
-
-      if (!result.success || !result.user) {
-        return {
-          success: false,
-          message: AUTH_MESSAGES.VERIFY_INVALID_CODE,
-        };
-      }
-
-      const tokens = await this.tokenService.generateTokenPair(result.user.id, result.user.email);
-
-      this.logger.log(`Email verified: ${result.user.email}`);
-
-      return {
-        success: true,
-        message: AUTH_MESSAGES.VERIFY_SUCCESS,
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-        user: this.toUserDto(result.user),
-      };
-    } catch (error) {
-      this.logger.error('Verify email error:', error);
-      return {
-        success: false,
-        message: AUTH_MESSAGES.VERIFY_FAILED,
-      };
-    }
+    return this.authService.verifyEmail(data);
   }
 
   /**
    * Resend email verification code.
-   * Returns success even if email not found (security: don't reveal user existence).
    */
   @GrpcMethod('AuthService', 'ResendVerificationCode')
   async resendVerificationCode(data: IResendVerificationRequest): Promise<IResendVerificationResponse> {
-    try {
-      const result = await this.userService.resendVerificationCode(data.email);
-
-      if (!result.success || !result.user || !result.code) {
-        return {
-          success: true, // Don't reveal whether email exists
-          message: AUTH_MESSAGES.RESEND_CODE_HINT,
-        };
-      }
-
-      await this.emailService.sendVerificationCode(result.user.email, result.user.name, result.code);
-
-      this.logger.log(`Verification code resent to: ${result.user.email}`);
-
-      return {
-        success: true,
-        message: AUTH_MESSAGES.RESEND_CODE_SUCCESS,
-      };
-    } catch (error) {
-      this.logger.error('Resend verification error:', error);
-      return {
-        success: false,
-        message: AUTH_MESSAGES.RESEND_CODE_FAILED,
-      };
-    }
+    return this.authService.resendVerificationCode(data);
   }
 
   /**
    * Authenticate user with email and password.
-   * Requires verified email. Returns tokens and user data on success.
    */
   @GrpcMethod('AuthService', 'Login')
   async login(data: ILoginRequest): Promise<IAuthResponse> {
-    try {
-      const user = await this.userService.findByEmail(data.email);
-      if (!user) {
-        return {
-          success: false,
-          message: AUTH_MESSAGES.INVALID_CREDENTIALS,
-        };
-      }
-
-      // Check if email is verified
-      if (!user.isVerified) {
-        return {
-          success: false,
-          message: AUTH_MESSAGES.EMAIL_NOT_VERIFIED,
-        };
-      }
-
-      const isValid = await this.userService.validatePassword(user, data.password);
-      if (!isValid) {
-        return {
-          success: false,
-          message: AUTH_MESSAGES.INVALID_CREDENTIALS,
-        };
-      }
-
-      const tokens = await this.tokenService.generateTokenPair(user.id, user.email);
-
-      this.logger.log(`User logged in: ${user.email}`);
-
-      return {
-        success: true,
-        message: AUTH_MESSAGES.LOGIN_SUCCESS,
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-        user: this.toUserDto(user),
-      };
-    } catch (error) {
-      this.logger.error('Login error:', error);
-      return {
-        success: false,
-        message: AUTH_MESSAGES.LOGIN_FAILED,
-      };
-    }
+    return this.authService.login(data);
   }
 
   /**
@@ -224,74 +73,23 @@ export class AuthController {
    */
   @GrpcMethod('AuthService', 'Logout')
   async logout(data: ILogoutRequest): Promise<ILogoutResponse> {
-    try {
-      await this.tokenService.revokeAccessToken(data.access_token);
-
-      this.logger.log(`User logged out: ${data.user_id}`);
-
-      return {
-        success: true,
-        message: AUTH_MESSAGES.LOGOUT_SUCCESS,
-      };
-    } catch (error) {
-      this.logger.error('Logout error:', error);
-      return {
-        success: false,
-        message: AUTH_MESSAGES.LOGOUT_FAILED,
-      };
-    }
+    return this.authService.logout(data);
   }
 
   /**
    * Exchange refresh token for new access/refresh token pair.
-   * Implements token rotation: old refresh token is invalidated.
    */
   @GrpcMethod('AuthService', 'RefreshToken')
   async refreshToken(data: IRefreshTokenRequest): Promise<IAuthResponse> {
-    try {
-      const tokens = await this.tokenService.refreshTokens(data.refresh_token);
-      if (!tokens) {
-        return {
-          success: false,
-          message: AUTH_MESSAGES.INVALID_REFRESH_TOKEN,
-        };
-      }
-
-      return {
-        success: true,
-        message: AUTH_MESSAGES.TOKEN_REFRESHED,
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-      };
-    } catch (error) {
-      this.logger.error('Token refresh error:', error);
-      return {
-        success: false,
-        message: AUTH_MESSAGES.TOKEN_REFRESH_FAILED,
-      };
-    }
+    return this.authService.refreshToken(data);
   }
 
   /**
    * Validate access token and return user info if valid.
-   * Used by Gateway to authenticate incoming requests.
    */
   @GrpcMethod('AuthService', 'ValidateToken')
   async validateToken(data: IValidateTokenRequest): Promise<IValidateTokenResponse> {
-    try {
-      const payload = await this.tokenService.validateAccessToken(data.access_token);
-      if (!payload) {
-        return { valid: false };
-      }
-
-      return {
-        valid: true,
-        user_id: payload.sub,
-        email: payload.email,
-      };
-    } catch (error) {
-      return { valid: false };
-    }
+    return this.authService.validateToken(data);
   }
 
   /**
@@ -299,27 +97,7 @@ export class AuthController {
    */
   @GrpcMethod('AuthService', 'GetUser')
   async getUser(data: IGetUserRequest): Promise<IUserResponse> {
-    try {
-      const user = await this.userService.findById(data.user_id);
-      if (!user) {
-        return {
-          success: false,
-          message: AUTH_MESSAGES.USER_NOT_FOUND,
-        };
-      }
-
-      return {
-        success: true,
-        message: AUTH_MESSAGES.USER_FOUND,
-        user: this.toUserDto(user),
-      };
-    } catch (error) {
-      this.logger.error('Get user error:', error);
-      return {
-        success: false,
-        message: AUTH_MESSAGES.USER_GET_FAILED,
-      };
-    }
+    return this.authService.getUser(data);
   }
 
   /**
@@ -327,166 +105,30 @@ export class AuthController {
    */
   @GrpcMethod('AuthService', 'UpdateUser')
   async updateUser(data: IUserUpdateRequest): Promise<IUserResponse> {
-    try {
-      const updateData: { name?: string; avatarUrl?: string } = {};
-      if (data.name) updateData.name = data.name;
-      if (data.avatar_url) updateData.avatarUrl = data.avatar_url;
-
-      const user = await this.userService.update(data.user_id, updateData);
-
-      return {
-        success: true,
-        message: AUTH_MESSAGES.USER_UPDATED,
-        user: this.toUserDto(user),
-      };
-    } catch (error) {
-      this.logger.error('Update user error:', error);
-      return {
-        success: false,
-        message: AUTH_MESSAGES.USER_UPDATE_FAILED,
-      };
-    }
+    return this.authService.updateUser(data);
   }
 
   /**
    * Authenticate via OAuth (Google or GitHub).
-   * Creates account if first login, links provider if email exists.
-   * OAuth users are auto-verified.
    */
   @GrpcMethod('AuthService', 'OAuthLogin')
   async oAuthLogin(data: IOAuthLoginRequest): Promise<IAuthResponse> {
-    try {
-      let oauthUser: { id: string; email: string; name: string; avatarUrl?: string } | null = null;
-
-      if (data.provider === 'google') {
-        oauthUser = await this.oauthService.handleGoogleLogin(data.code, data.redirect_uri);
-      } else if (data.provider === 'github') {
-        oauthUser = await this.oauthService.handleGithubLogin(data.code, data.redirect_uri);
-      } else {
-        return {
-          success: false,
-          message: AUTH_MESSAGES.OAUTH_UNSUPPORTED_PROVIDER,
-        };
-      }
-
-      if (!oauthUser) {
-        return {
-          success: false,
-          message: AUTH_MESSAGES.OAUTH_FAILED,
-        };
-      }
-
-      let user = data.provider === 'google'
-        ? await this.userService.findByGoogleId(oauthUser.id)
-        : await this.userService.findByGithubId(oauthUser.id);
-
-      if (!user) {
-        user = await this.userService.findByEmail(oauthUser.email);
-        if (user) {
-          if (data.provider === 'google') {
-            user = await this.userService.linkGoogleAccount(user.id, oauthUser.id);
-          } else {
-            user = await this.userService.linkGithubAccount(user.id, oauthUser.id);
-          }
-        } else {
-          user = await this.userService.create({
-            email: oauthUser.email,
-            name: oauthUser.name,
-            avatarUrl: oauthUser.avatarUrl,
-            googleId: data.provider === 'google' ? oauthUser.id : undefined,
-            githubId: data.provider === 'github' ? oauthUser.id : undefined,
-          });
-        }
-      }
-
-      const tokens = await this.tokenService.generateTokenPair(user.id, user.email);
-
-      this.logger.log(`OAuth login successful: ${user.email} via ${data.provider}`);
-
-      return {
-        success: true,
-        message: AUTH_MESSAGES.OAUTH_SUCCESS,
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-        user: this.toUserDto(user),
-      };
-    } catch (error) {
-      this.logger.error('OAuth login error:', error);
-      return {
-        success: false,
-        message: AUTH_MESSAGES.OAUTH_LOGIN_FAILED,
-      };
-    }
+    return this.authService.oAuthLogin(data);
   }
 
   /**
    * Request password reset email.
-   * Returns success even if email not found (security: don't reveal user existence).
    */
   @GrpcMethod('AuthService', 'RequestPasswordReset')
   async requestPasswordReset(data: IPasswordResetRequest): Promise<IPasswordResetResponse> {
-    try {
-      const user = await this.userService.findByEmail(data.email);
-
-      if (!user) {
-        return {
-          success: true,
-          message: AUTH_MESSAGES.PASSWORD_RESET_HINT,
-        };
-      }
-
-      const token = await this.tokenService.generatePasswordResetToken(user.id);
-
-      const frontendUrl = this.configService.get<string>('app.frontendUrl');
-      const resetLink = `${frontendUrl}/reset-password?token=${token}`;
-      await this.emailService.sendPasswordResetEmail(user.email, user.name, resetLink);
-
-      this.logger.log(`Password reset requested for: ${user.email}`);
-
-      return {
-        success: true,
-        message: AUTH_MESSAGES.PASSWORD_RESET_HINT,
-      };
-    } catch (error) {
-      this.logger.error('Password reset request error:', error);
-      return {
-        success: false,
-        message: AUTH_MESSAGES.PASSWORD_RESET_REQUEST_FAILED,
-      };
-    }
+    return this.authService.requestPasswordReset(data);
   }
 
   /**
    * Set new password using reset token.
-   * Invalidates all existing sessions after password change.
    */
   @GrpcMethod('AuthService', 'ResetPassword')
   async resetPassword(data: IResetPasswordConfirmRequest): Promise<IResetPasswordConfirmResponse> {
-    try {
-      const userId = await this.tokenService.validatePasswordResetToken(data.token);
-      if (!userId) {
-        return {
-          success: false,
-          message: AUTH_MESSAGES.INVALID_RESET_TOKEN,
-        };
-      }
-
-      await this.userService.updatePassword(userId, data.new_password);
-      await this.tokenService.markPasswordResetTokenUsed(data.token);
-      await this.tokenService.revokeAllUserTokens(userId);
-
-      this.logger.log(`Password reset successful for user: ${userId}`);
-
-      return {
-        success: true,
-        message: AUTH_MESSAGES.PASSWORD_RESET_SUCCESS,
-      };
-    } catch (error) {
-      this.logger.error('Password reset error:', error);
-      return {
-        success: false,
-        message: AUTH_MESSAGES.PASSWORD_RESET_FAILED,
-      };
-    }
+    return this.authService.resetPassword(data);
   }
 }

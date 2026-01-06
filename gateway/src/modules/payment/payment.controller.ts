@@ -1,48 +1,73 @@
 import { Controller, Get, Post, Body, OnModuleInit, Inject, Request } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
-import { Observable } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { Public } from '../../common/decorators';
+import { CreateOrderDto, VerifyPaymentDto } from './dto';
+import {
+  RazorpayPaymentServiceClient,
+  RazorpayGetPlansResponse,
+  RazorpayCreateOrderResponse,
+  RazorpayVerifyPaymentResponse,
+  RazorpaySubscriptionResponse,
+} from '../../grpc/interfaces';
 
-interface PaymentService {
-  GetPlans(data: {}): Observable<any>;
-  CreateOrder(data: any): Observable<any>;
-  VerifyPayment(data: any): Observable<any>;
-  GetSubscription(data: any): Observable<any>;
-}
-
+/**
+ * REST API controller for payment endpoints.
+ * Routes are prefixed with /api/v1/payment
+ * Handles Razorpay payment integration for subscription management.
+ */
 @Controller('payment')
 export class PaymentController implements OnModuleInit {
-  private paymentService: PaymentService;
+  private paymentService: RazorpayPaymentServiceClient;
 
   constructor(@Inject('PAYMENT_PACKAGE') private client: ClientGrpc) {}
 
   onModuleInit() {
-    this.paymentService = this.client.getService<PaymentService>('PaymentService');
+    this.paymentService =
+      this.client.getService<RazorpayPaymentServiceClient>('PaymentService');
   }
 
-  /** GET /payment/plans - Get all available plans (public) */
+  /**
+   * GET /payment/plans - Get all available subscription plans.
+   * Public endpoint - no authentication required.
+   * @returns List of active plans with pricing details
+   */
   @Public()
   @Get('plans')
-  getPlans() {
-    return this.paymentService.GetPlans({});
+  async getPlans(): Promise<RazorpayGetPlansResponse> {
+    return firstValueFrom(this.paymentService.GetPlans({}));
   }
 
-  /** POST /payment/create-order - Create a Razorpay order */
+  /**
+   * POST /payment/create-order - Create a Razorpay order.
+   * Requires authentication.
+   * @param body - Order details (userId, planId, billingCycle)
+   * @returns Order ID and Razorpay key for checkout
+   */
   @Post('create-order')
-  createOrder(@Body() body: { userId: string; planId: string; billingCycle: string }) {
-    return this.paymentService.CreateOrder(body);
+  async createOrder(@Body() body: CreateOrderDto): Promise<RazorpayCreateOrderResponse> {
+    return firstValueFrom(this.paymentService.CreateOrder(body));
   }
 
-  /** POST /payment/verify - Verify payment after Razorpay checkout */
+  /**
+   * POST /payment/verify - Verify Razorpay payment after checkout.
+   * Requires authentication.
+   * @param body - Payment verification details (orderId, paymentId, signature, userId)
+   * @returns Verification result with updated subscription details
+   */
   @Post('verify')
-  verifyPayment(@Body() body: { orderId: string; paymentId: string; signature: string; userId: string }) {
-    return this.paymentService.VerifyPayment(body);
+  async verifyPayment(@Body() body: VerifyPaymentDto): Promise<RazorpayVerifyPaymentResponse> {
+    return firstValueFrom(this.paymentService.VerifyPayment(body));
   }
 
-  /** GET /payment/subscription - Get user's subscription (uses userId from JWT token) */
+  /**
+   * GET /payment/subscription - Get user's current subscription.
+   * Requires authentication. Uses userId from JWT token.
+   * @returns Current subscription details or free plan if none exists
+   */
   @Get('subscription')
-  getSubscription(@Request() req: any) {
-    const userId = req.user?.userId;
-    return this.paymentService.GetSubscription({ userId });
+  async getSubscription(@Request() req: { user?: { userId?: string } }): Promise<RazorpaySubscriptionResponse> {
+    const userId = req.user?.userId || '';
+    return firstValueFrom(this.paymentService.GetSubscription({ userId }));
   }
 }

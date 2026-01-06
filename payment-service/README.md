@@ -1,98 +1,385 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Payment Service
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+The Payment Service is a gRPC microservice that handles subscription plans, Razorpay payments, and user subscriptions for the TempMail Pro application.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Architecture
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ pnpm install
+```
+┌─────────────┐      gRPC       ┌─────────────────┐
+│   Gateway   │ ──────────────► │ Payment Service │
+└─────────────┘                 └────────┬────────┘
+                                         │
+                    ┌────────────────────┼────────────────────┐
+                    │                    │                    │
+                    ▼                    ▼                    ▼
+             ┌──────────┐         ┌───────────┐        ┌───────────┐
+             │PostgreSQL│         │ Razorpay  │        │ New Relic │
+             │(Prisma)  │         │   API     │        │Monitoring │
+             └──────────┘         └───────────┘        └───────────┘
 ```
 
-## Compile and run the project
+## Features
 
-```bash
-# development
-$ pnpm run start
+- **Subscription Plans** - Fetch and manage available plans (Free, Pro, Business)
+- **Order Creation** - Create Razorpay orders for plan upgrades
+- **Payment Verification** - Verify Razorpay payments with signature validation
+- **Subscription Management** - Track active subscriptions with expiry dates
+- **Upgrade Protection** - Prevent downgrades, allow only upgrades
 
-# watch mode
-$ pnpm run start:dev
+## Tech Stack
 
-# production mode
-$ pnpm run start:prod
+- **Framework**: NestJS with gRPC transport
+- **Database**: PostgreSQL via Prisma ORM
+- **Payment Gateway**: Razorpay
+- **Monitoring**: New Relic APM
+
+## Project Structure
+
+```
+src/
+├── payment/                   # Payment module
+│   ├── payment.controller.ts  # gRPC methods
+│   ├── payment.service.ts     # Business logic
+│   ├── payment.module.ts
+│   ├── razorpay.service.ts    # Razorpay SDK wrapper
+│   └── constants.ts           # Response messages
+├── prisma/                    # Database client
+│   └── prisma.service.ts
+├── config/                    # Configuration
+│   └── app.config.ts
+├── interfaces/                # TypeScript interfaces
+│   └── payment.interface.ts
+├── proto/                     # gRPC proto file
+│   └── payment.proto
+├── app.module.ts              # Root module
+└── main.ts                    # Application bootstrap
 ```
 
-## Run tests
+## gRPC Methods
 
-```bash
-# unit tests
-$ pnpm run test
+| Method            | Description                             | Auth Required |
+| ----------------- | --------------------------------------- | ------------- |
+| `GetPlans`        | Fetch all active subscription plans     | No            |
+| `CreateOrder`     | Create Razorpay order for plan purchase | Yes           |
+| `VerifyPayment`   | Verify payment after Razorpay checkout  | Yes           |
+| `GetSubscription` | Get user's current subscription         | Yes           |
+| `HealthCheck`     | Service health status with DB check     | No            |
 
-# e2e tests
-$ pnpm run test:e2e
+## HTTP Health Endpoints
 
-# test coverage
-$ pnpm run test:cov
+For deployment keep-alive and monitoring:
+
+| Endpoint            | Description                    | Response                           |
+| ------------------- | ------------------------------ | ---------------------------------- |
+| `GET /health`       | Basic health check             | `{ status, service, timestamp }`   |
+| `GET /health/ready` | Readiness check (DB connected) | `{ status, database, timestamp }`  |
+| `GET /health/live`  | Liveness check                 | `{ status, timestamp }`            |
+
+## Payment Flow
+
+### 1. Get Available Plans
+
+```
+Frontend: Display pricing page
+        ↓
+Gateway: GET /api/v1/payments/plans
+        ↓
+Payment Service: gRPC GetPlans()
+        ↓
+Returns: List of plans (Free, Pro, Business) with pricing
 ```
 
-## Deployment
+### 2. Create Order (Initiate Purchase)
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+```
+User selects plan → Frontend
+        ↓
+Gateway: POST /api/v1/payments/orders
+{
+  "planId": "uuid-of-plan",
+  "billingCycle": "monthly" | "annual"
+}
+        ↓
+Payment Service: gRPC CreateOrder()
+  1. Validate plan exists
+  2. Check user doesn't already have same/higher tier
+  3. Create Razorpay order via API
+  4. Store payment record (status: pending)
+        ↓
+Returns: { orderId, amount, currency, razorpayKeyId }
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 3. Razorpay Checkout (Frontend)
 
-## Resources
+```javascript
+const options = {
+  key: razorpayKeyId,
+  amount: amount,
+  currency: currency,
+  order_id: orderId,
+  handler: function (response) {
+    // Send to backend for verification
+    verifyPayment({
+      orderId: response.razorpay_order_id,
+      paymentId: response.razorpay_payment_id,
+      signature: response.razorpay_signature,
+    });
+  },
+};
+const rzp = new Razorpay(options);
+rzp.open();
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+### 4. Verify Payment (Complete Purchase)
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```
+Razorpay returns payment details → Frontend
+        ↓
+Gateway: POST /api/v1/payments/verify
+{
+  "orderId": "order_xxx",
+  "paymentId": "pay_xxx",
+  "signature": "xxx"
+}
+        ↓
+Payment Service: gRPC VerifyPayment()
+  1. Verify HMAC signature (orderId + paymentId)
+  2. Validate payment record exists
+  3. Check payment belongs to requesting user
+  4. Check not already verified
+  5. Create/update subscription (transaction)
+  6. Update user's plan field
+        ↓
+Returns: { success, planKey, expiresAt }
+```
 
-## Support
+### 5. Get Subscription Status
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```
+Frontend: Check user's current plan
+        ↓
+Gateway: GET /api/v1/payments/subscription
+        ↓
+Payment Service: gRPC GetSubscription()
+        ↓
+Returns: { planKey, planName, status, billingCycle, expiresAt }
+```
 
-## Stay in touch
+## Database Schema
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```prisma
+model Plan {
+  id           String   @id @default(uuid())
+  key          String   @unique  // "free", "pro", "business"
+  name         String              // "Free", "Pro", "Business"
+  description  String?
+  priceMonthly Int      @default(0)  // in paise (₹299 = 29900)
+  priceAnnual  Int      @default(0)  // in paise
+  features     String[]            // Feature list
+  isPopular    Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-## License
+  payments      Payment[]
+  subscriptions Subscription[]
+}
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+model Payment {
+  id              String   @id @default(uuid())
+  userId          String
+  planId          String
+  billingCycle    String   // "monthly" or "annual"
+  razorpayOrderId String   @unique
+  razorpayPayId   String?
+  amount          Int
+  status          String   @default("pending")  // pending, success, failed
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  plan Plan @relation(fields: [planId], references: [id])
+}
+
+model Subscription {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  planId       String
+  billingCycle String   // "monthly" or "annual"
+  status       String   @default("active")  // active, expired, cancelled
+  startedAt    DateTime @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  plan Plan @relation(fields: [planId], references: [id])
+}
+```
+
+## Plan Tier System
+
+Plans are ordered by tier to prevent downgrades:
+
+| Tier | Plan Key   | Plan Name |
+| ---- | ---------- | --------- |
+| 0    | `free`     | Free      |
+| 1    | `pro`      | Pro       |
+| 2    | `business` | Business  |
+
+**Rules:**
+
+- Users can only upgrade (higher tier)
+- Downgrades are not allowed via payment
+- Free users can upgrade to Pro or Business
+- Pro users can upgrade to Business
+
+## Setup
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL 14+ (shared database)
+- Razorpay account with API keys
+- pnpm
+
+### Installation
+
+```bash
+# Install dependencies
+pnpm install
+
+# Generate Prisma client
+npx prisma generate
+
+# Seed plans (optional)
+npx prisma db seed
+
+# Start development server
+pnpm start:dev
+```
+
+### Environment Variables
+
+Create a `.env` file:
+
+```env
+# Server
+NODE_ENV=development
+PAYMENT_GRPC_URL=0.0.0.0:5002
+
+# Database (shared with all services)
+DATABASE_URL=postgresql://user:pass@localhost:5432/tempmail
+
+# Razorpay API Keys
+RAZORPAY_KEY_ID=rzp_test_xxxx
+RAZORPAY_KEY_SECRET=your_key_secret
+
+# New Relic (optional)
+NEW_RELIC_APP_NAME=TempMail-Payment
+NEW_RELIC_LICENSE_KEY=your_license_key
+```
+
+### Getting Razorpay Keys
+
+1. Go to [Razorpay Dashboard](https://dashboard.razorpay.com)
+2. Navigate to **Settings → API Keys**
+3. Generate a new key pair
+4. Copy `Key ID` and `Key Secret` to `.env`
+
+> **Note:** Use test keys (`rzp_test_*`) for development. Switch to live keys for production.
+
+## Security Features
+
+- **Signature Verification**: HMAC-SHA256 verification of Razorpay signature
+- **User Validation**: Payment must belong to requesting user
+- **Idempotency**: Prevents double verification of same payment
+- **Transaction Safety**: Prisma transactions for subscription creation
+
+## Proto Definition
+
+```protobuf
+syntax = "proto3";
+package payment;
+
+service PaymentService {
+  rpc GetPlans(GetPlansRequest) returns (GetPlansResponse);
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc VerifyPayment(VerifyPaymentRequest) returns (VerifyPaymentResponse);
+  rpc GetSubscription(GetSubscriptionRequest) returns (SubscriptionResponse);
+}
+
+message Plan {
+  string id = 1;
+  string key = 2;
+  string name = 3;
+  string description = 4;
+  int32 price_monthly = 5;
+  int32 price_annual = 6;
+  repeated string features = 7;
+  bool is_popular = 8;
+}
+
+message CreateOrderRequest {
+  string user_id = 1;
+  string plan_id = 2;
+  string billing_cycle = 3;
+}
+
+message CreateOrderResponse {
+  string order_id = 1;
+  int32 amount = 2;
+  string currency = 3;
+  string razorpay_key_id = 4;
+}
+
+message VerifyPaymentRequest {
+  string order_id = 1;
+  string payment_id = 2;
+  string signature = 3;
+  string user_id = 4;
+}
+
+message VerifyPaymentResponse {
+  bool success = 1;
+  string message = 2;
+  string plan_key = 3;
+  string expires_at = 4;
+}
+```
+
+## Scripts
+
+```bash
+pnpm start:dev    # Development with hot reload
+pnpm build        # Build for production
+pnpm start:prod   # Run production build
+pnpm lint         # ESLint
+pnpm test         # Run tests
+```
+
+## Error Messages
+
+| Code                          | Message                           |
+| ----------------------------- | --------------------------------- |
+| `PLAN_NOT_FOUND`              | Plan not found                    |
+| `ORDER_FREE_PLAN_ERROR`       | Cannot create order for free plan |
+| `ORDER_ALREADY_SUBSCRIBED`    | Already subscribed to plan        |
+| `ORDER_DOWNGRADE_NOT_ALLOWED` | Cannot downgrade to lower plan    |
+| `PAYMENT_INVALID_SIGNATURE`   | Invalid payment signature         |
+| `PAYMENT_RECORD_NOT_FOUND`    | Payment record not found          |
+| `PAYMENT_USER_MISMATCH`       | Payment does not belong to user   |
+| `PAYMENT_ALREADY_VERIFIED`    | Payment already verified          |
+
+## Testing with Razorpay
+
+### Test Card Numbers
+
+| Card Type | Number              | CVV          | Expiry          |
+| --------- | ------------------- | ------------ | --------------- |
+| Success   | 4111 1111 1111 1111 | Any 3 digits | Any future date |
+| Failure   | 4000 0000 0000 0002 | Any          | Any             |
+
+### Test UPI ID
+
+- `success@razorpay` - Always succeeds
+- `failure@razorpay` - Always fails

@@ -66,19 +66,36 @@ src/
 
 ### Authentication
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/v1/auth/register` | Create new account | No |
-| POST | `/api/v1/auth/verify-email` | Verify email with code | No |
-| POST | `/api/v1/auth/resend-verification` | Resend verification code | No |
-| POST | `/api/v1/auth/login` | Login with email/password | No |
-| POST | `/api/v1/auth/logout` | Logout (revoke token) | Yes |
-| POST | `/api/v1/auth/refresh` | Refresh access token | No |
-| POST | `/api/v1/auth/oauth/:provider` | OAuth login (google/github) | No |
-| POST | `/api/v1/auth/password-reset/request` | Request password reset | No |
-| POST | `/api/v1/auth/password-reset/confirm` | Set new password | No |
-| GET | `/api/v1/auth/me` | Get current user profile | Yes |
-| PUT | `/api/v1/auth/me` | Update user profile | Yes |
+| Method | Endpoint                              | Description                 | Auth |
+| ------ | ------------------------------------- | --------------------------- | ---- |
+| POST   | `/api/v1/auth/register`               | Create new account          | No   |
+| POST   | `/api/v1/auth/verify-email`           | Verify email with code      | No   |
+| POST   | `/api/v1/auth/resend-verification`    | Resend verification code    | No   |
+| POST   | `/api/v1/auth/login`                  | Login with email/password   | No   |
+| POST   | `/api/v1/auth/logout`                 | Logout (revoke token)       | Yes  |
+| POST   | `/api/v1/auth/refresh`                | Refresh access token        | No   |
+| POST   | `/api/v1/auth/oauth/:provider`        | OAuth login (google/github) | No   |
+| POST   | `/api/v1/auth/password-reset/request` | Request password reset      | No   |
+| POST   | `/api/v1/auth/password-reset/confirm` | Set new password            | No   |
+| GET    | `/api/v1/auth/me`                     | Get current user profile    | Yes  |
+| PUT    | `/api/v1/auth/me`                     | Update user profile         | Yes  |
+
+### Payments
+
+| Method | Endpoint                        | Description                   | Auth |
+| ------ | ------------------------------- | ----------------------------- | ---- |
+| GET    | `/api/v1/payments/plans`        | Get all subscription plans    | No   |
+| POST   | `/api/v1/payments/orders`       | Create Razorpay order         | Yes  |
+| POST   | `/api/v1/payments/verify`       | Verify payment after checkout | Yes  |
+| GET    | `/api/v1/payments/subscription` | Get current subscription      | Yes  |
+
+### Health
+
+| Method | Endpoint                  | Description                    | Auth |
+| ------ | ------------------------- | ------------------------------ | ---- |
+| GET    | `/api/v1/health`          | Basic health check             | No   |
+| GET    | `/api/v1/health/ready`    | Readiness check                | No   |
+| GET    | `/api/v1/health/live`     | Liveness check                 | No   |
 
 ## Request/Response Examples
 
@@ -96,6 +113,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -117,6 +135,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -146,6 +165,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -289,6 +309,7 @@ All endpoints return consistent error responses:
 ```
 
 HTTP status codes:
+
 - `200` - Success
 - `201` - Created (registration)
 - `400` - Bad Request (validation)
@@ -336,5 +357,6 @@ NEW_RELIC_APP_NAME=TempMail-Gateway
 ```
 
 Sensitive headers are excluded from monitoring:
+
 - `request.headers.cookie`
 - `request.headers.authorization`
