@@ -8,10 +8,7 @@ RUN apk add --no-cache openssl
 # Copy the shared database package (linked dependency)
 COPY database /app/database
 
-# Copy the shared proto directory
-COPY proto /app/proto
-
-# Copy the service directory
+# Copy the service directory (includes proto files in src/proto/)
 COPY payment-service /app/payment-service
 
 # Build the database package first

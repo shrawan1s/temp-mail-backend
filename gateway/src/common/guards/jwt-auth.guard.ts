@@ -11,6 +11,7 @@ import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { AuthServiceClient, ValidateTokenResponse } from '../../grpc/interfaces';
+import { GrpcClientService } from '../../grpc';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate, OnModuleInit {
@@ -19,6 +20,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
   constructor(
     private reflector: Reflector,
     @Inject('AUTH_PACKAGE') private authClient: ClientGrpc,
+    private readonly grpcClientService: GrpcClientService,
   ) {}
 
   onModuleInit() {
@@ -45,7 +47,10 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
 
     try {
       const response: ValidateTokenResponse = await firstValueFrom(
-        this.authService.validateToken({ access_token: token }),
+        this.authService.validateToken(
+          { access_token: token },
+          this.grpcClientService.getMetadata(),
+        ),
       );
 
       if (!response.valid) {
