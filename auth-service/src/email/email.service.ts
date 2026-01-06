@@ -14,15 +14,15 @@ export class EmailService {
   private readonly senderName: string;
 
   constructor(private configService: ConfigService) {
-    const apiKey = this.configService.get<string>('BREVO_API_KEY');
+    const apiKey = this.configService.get<string>('app.brevoApiKey');
     
     if (apiKey) {
       this.apiInstance = new Brevo.TransactionalEmailsApi();
       this.apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
     }
 
-    this.senderEmail = this.configService.get<string>('SENDER_EMAIL') || '';
-    this.senderName = this.configService.get<string>('SENDER_NAME') || '';
+    this.senderEmail = this.configService.get<string>('app.brevoSenderEmail', '');
+    this.senderName = this.configService.get<string>('app.senderName', '');
   }
 
   /**

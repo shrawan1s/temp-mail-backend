@@ -11,14 +11,19 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const logger = new Logger('AuthService');
 
-  // Create app context first to get ConfigService
-  const appContext = await NestFactory.createApplicationContext(AppModule);
-  const configService = appContext.get(ConfigService);
+  // Create HTTP app for health checks (Render requires an HTTP port)
+  const httpApp = await NestFactory.create(AppModule);
+  const configService = httpApp.get(ConfigService);
+  
+  const httpPort = configService.get<number>('app.httpPort', 3001);
   const grpcUrl = configService.get<string>('app.grpcUrl');
-  await appContext.close();
 
-  // Create gRPC-only microservice
-  const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
+  // Start HTTP server for health checks
+  await httpApp.listen(httpPort, '0.0.0.0');
+  logger.log(`🩺 Health endpoint available at http://0.0.0.0:${httpPort}/health`);
+
+  // Connect gRPC microservice to the same app
+  httpApp.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
       package: 'auth',
@@ -34,7 +39,7 @@ async function bootstrap() {
     },
   });
 
-  await app.listen();
+  await httpApp.startAllMicroservices();
   logger.log(`🔐 Auth Service running on ${grpcUrl} (gRPC)`);
 }
 
