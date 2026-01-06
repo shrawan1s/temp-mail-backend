@@ -5,20 +5,25 @@ WORKDIR /app
 # Install OpenSSL (required for Prisma on Alpine)
 RUN apk add --no-cache openssl
 
+# Copy the shared database package (linked dependency)
+COPY database /app/database
+
 # Copy the shared proto directory
 COPY proto /app/proto
 
 # Copy the service directory
 COPY auth-service /app/auth-service
 
-WORKDIR /app/auth-service
-
-# Install dependencies and build
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+# Build the database package first
+WORKDIR /app/database
+RUN npm install -g pnpm && pnpm install
 RUN npx prisma generate
+
+# Build the service
+WORKDIR /app/auth-service
+RUN pnpm install --frozen-lockfile
 RUN pnpm build
 
-# Expose the port (Auth Service uses GRPC usually on a specific port, checks .env)
-# But for Docker we might defaults.
+EXPOSE 5001
 
 CMD ["pnpm", "start:prod"]

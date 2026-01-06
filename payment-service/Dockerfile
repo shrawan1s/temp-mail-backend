@@ -5,20 +5,25 @@ WORKDIR /app
 # Install OpenSSL (required for Prisma on Alpine)
 RUN apk add --no-cache openssl
 
+# Copy the shared database package (linked dependency)
+COPY database /app/database
+
 # Copy the shared proto directory
 COPY proto /app/proto
 
 # Copy the service directory
 COPY payment-service /app/payment-service
 
-WORKDIR /app/payment-service
-
-# Install dependencies and build
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+# Build the database package first
+WORKDIR /app/database
+RUN npm install -g pnpm && pnpm install
 RUN npx prisma generate
+
+# Build the service
+WORKDIR /app/payment-service
+RUN pnpm install --frozen-lockfile
 RUN pnpm build
 
-# Expose gRPC port (default 5002)
 EXPOSE 5002
 
 CMD ["pnpm", "start:prod"]
