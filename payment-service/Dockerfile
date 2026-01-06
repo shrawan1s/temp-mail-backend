@@ -11,10 +11,11 @@ COPY database /app/database
 # Copy the service directory (includes proto files in src/proto/)
 COPY payment-service /app/payment-service
 
-# Build the database package first
+# Build the database package first (generates Prisma client + compiles TS)
 WORKDIR /app/database
 RUN npm install -g pnpm && pnpm install
 RUN npx prisma generate
+RUN pnpm build
 
 # Build the service
 WORKDIR /app/payment-service
