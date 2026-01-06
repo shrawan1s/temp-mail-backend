@@ -3,6 +3,7 @@ import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { Public } from '../../common/decorators';
 import { CreateOrderDto, VerifyPaymentDto } from './dto';
+import { GrpcClientService } from '../../grpc';
 import {
   RazorpayPaymentServiceClient,
   RazorpayGetPlansResponse,
@@ -20,7 +21,10 @@ import {
 export class PaymentController implements OnModuleInit {
   private paymentService: RazorpayPaymentServiceClient;
 
-  constructor(@Inject('PAYMENT_PACKAGE') private client: ClientGrpc) {}
+  constructor(
+    @Inject('PAYMENT_PACKAGE') private client: ClientGrpc,
+    private readonly grpcClientService: GrpcClientService,
+  ) {}
 
   onModuleInit() {
     this.paymentService =
@@ -35,7 +39,9 @@ export class PaymentController implements OnModuleInit {
   @Public()
   @Get('plans')
   async getPlans(): Promise<RazorpayGetPlansResponse> {
-    return firstValueFrom(this.paymentService.GetPlans({}));
+    return firstValueFrom(
+      this.paymentService.GetPlans({}, this.grpcClientService.getMetadata()),
+    );
   }
 
   /**
@@ -46,7 +52,9 @@ export class PaymentController implements OnModuleInit {
    */
   @Post('create-order')
   async createOrder(@Body() body: CreateOrderDto): Promise<RazorpayCreateOrderResponse> {
-    return firstValueFrom(this.paymentService.CreateOrder(body));
+    return firstValueFrom(
+      this.paymentService.CreateOrder(body, this.grpcClientService.getMetadata()),
+    );
   }
 
   /**
@@ -57,7 +65,9 @@ export class PaymentController implements OnModuleInit {
    */
   @Post('verify')
   async verifyPayment(@Body() body: VerifyPaymentDto): Promise<RazorpayVerifyPaymentResponse> {
-    return firstValueFrom(this.paymentService.VerifyPayment(body));
+    return firstValueFrom(
+      this.paymentService.VerifyPayment(body, this.grpcClientService.getMetadata()),
+    );
   }
 
   /**
@@ -68,6 +78,8 @@ export class PaymentController implements OnModuleInit {
   @Get('subscription')
   async getSubscription(@Request() req: { user?: { userId?: string } }): Promise<RazorpaySubscriptionResponse> {
     const userId = req.user?.userId || '';
-    return firstValueFrom(this.paymentService.GetSubscription({ userId }));
+    return firstValueFrom(
+      this.paymentService.GetSubscription({ userId }, this.grpcClientService.getMetadata()),
+    );
   }
 }
