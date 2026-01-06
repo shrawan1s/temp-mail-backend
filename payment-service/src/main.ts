@@ -11,23 +11,35 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const logger = new Logger('PaymentService');
 
-  // Create app context first to get ConfigService
-  const appContext = await NestFactory.createApplicationContext(AppModule);
-  const configService = appContext.get(ConfigService);
-  const grpcUrl = configService.get<string>('app.grpcUrl');
-  await appContext.close();
+  // Create HTTP app for health checks (Render requires an HTTP port)
+  const httpApp = await NestFactory.create(AppModule);
+  const configService = httpApp.get(ConfigService);
 
-  // Create gRPC-only microservice
-  const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
+  const httpPort = configService.get<number>('app.httpPort', 3002);
+  const grpcUrl = configService.get<string>('app.grpcUrl');
+
+  // Start HTTP server for health checks
+  await httpApp.listen(httpPort, '0.0.0.0');
+  logger.log(`🩺 Health endpoint available at http://0.0.0.0:${httpPort}/health`);
+
+  // Connect gRPC microservice to the same app
+  httpApp.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
       package: 'payment',
       protoPath: join(__dirname, 'proto/payment.proto'),
       url: grpcUrl,
+      loader: {
+        keepCase: true,
+        longs: String,
+        enums: String,
+        defaults: true,
+        oneofs: true,
+      },
     },
   });
 
-  await app.listen();
+  await httpApp.startAllMicroservices();
   logger.log(`💳 Payment Service running on ${grpcUrl} (gRPC)`);
 }
 
