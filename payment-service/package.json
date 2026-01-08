@@ -30,6 +30,8 @@
     "@newrelic/native-metrics": "^12.0.0",
     "@prisma/client": "5.22.0",
     "@temp-email/database": "link:../database",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.3",
     "dotenv": "^17.2.3",
     "newrelic": "^13.8.1",
     "prisma": "5.22.0",
