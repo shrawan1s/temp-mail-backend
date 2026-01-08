@@ -1,7 +1,9 @@
 /**
- * Payment service interfaces for gRPC request/response types.
+ * Payment service interfaces for HTTP request/response types.
  * These interfaces define the contract for payment-related operations.
  */
+
+import { PlanKey } from '../enums';
 
 // ============= Plan Interfaces =============
 
@@ -67,9 +69,9 @@ export interface ISubscriptionResponse {
 
 // ============= Internal Types =============
 
-/** Tier order for plan comparison */
+/** Tier order for plan comparison (using enum values) */
 export const PLAN_TIER_ORDER: Record<string, number> = {
-  free: 0,
-  pro: 1,
-  business: 2,
+  [PlanKey.FREE]: 0,
+  [PlanKey.PRO]: 1,
+  [PlanKey.BUSINESS]: 2,
 };

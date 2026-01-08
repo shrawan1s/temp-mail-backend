@@ -2,8 +2,7 @@ import { registerAs } from '@nestjs/config';
 
 export default registerAs('app', () => ({
   nodeEnv: process.env.NODE_ENV || 'development',
-  httpPort: parseInt(process.env.PORT || '3001', 10),
-  grpcUrl: process.env.AUTH_GRPC_URL || '0.0.0.0:5001',
+  httpPort: parseInt(process.env.PORT || '5001', 10),
   internalApiKey: process.env.INTERNAL_API_KEY || '',
   
   // JWT
@@ -12,7 +11,7 @@ export default registerAs('app', () => ({
   
   // Brevo (Email)
   brevoApiKey: process.env.BREVO_API_KEY || '',
-  brevoSenderEmail: process.env.BREVO_SENDER_EMAIL || 'noreply@temp-email.com',
+  brevoSenderEmail: process.env.SENDER_EMAIL || '',
   senderName: process.env.SENDER_NAME || '',
   
   // OAuth - Google

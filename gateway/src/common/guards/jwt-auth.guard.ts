@@ -3,28 +3,30 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
-  Inject,
-  OnModuleInit,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ClientGrpc } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { ConfigService } from '@nestjs/config';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { AuthServiceClient, ValidateTokenResponse } from '../../grpc/interfaces';
-import { GrpcClientService } from '../../grpc';
+import { IValidateTokenResponse } from '../interfaces';
+import { ERROR_MESSAGES } from '../constants';
+import { HttpMethod } from '../enums';
+import { ENDPOINTS } from '../../config';
 
+/**
+ * JWT authentication guard that validates tokens via HTTP call to auth-service.
+ * Checks for @Public() decorator to skip authentication on public routes.
+ */
 @Injectable()
-export class JwtAuthGuard implements CanActivate, OnModuleInit {
-  private authService: AuthServiceClient;
+export class JwtAuthGuard implements CanActivate {
+  private readonly authServiceUrl: string;
+  private readonly internalApiKey: string;
 
   constructor(
     private reflector: Reflector,
-    @Inject('AUTH_PACKAGE') private authClient: ClientGrpc,
-    private readonly grpcClientService: GrpcClientService,
-  ) {}
-
-  onModuleInit() {
-    this.authService = this.authClient.getService<AuthServiceClient>('AuthService');
+    private configService: ConfigService,
+  ) {
+    this.authServiceUrl = this.configService.get<string>('app.authServiceUrl') || '';
+    this.internalApiKey = this.configService.get<string>('app.internalApiKey') || '';
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -42,19 +44,14 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
-      throw new UnauthorizedException('Access token is required');
+      throw new UnauthorizedException(ERROR_MESSAGES.AUTH_TOKEN_REQUIRED);
     }
 
     try {
-      const response: ValidateTokenResponse = await firstValueFrom(
-        this.authService.validateToken(
-          { access_token: token },
-          this.grpcClientService.getMetadata(),
-        ),
-      );
+      const response = await this.validateToken(token);
 
       if (!response.valid) {
-        throw new UnauthorizedException('Invalid or expired token');
+        throw new UnauthorizedException(ERROR_MESSAGES.AUTH_TOKEN_INVALID);
       }
 
       // Attach user info to request
@@ -68,11 +65,36 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new UnauthorizedException('Token validation failed');
+      throw new UnauthorizedException(ERROR_MESSAGES.AUTH_TOKEN_VALIDATION_FAILED);
     }
   }
 
-  private extractTokenFromHeader(request: any): string | undefined {
+  /**
+   * Validate access token by calling auth-service.
+   */
+  private async validateToken(accessToken: string): Promise<IValidateTokenResponse> {
+    const url = `${this.authServiceUrl}${ENDPOINTS.auth.validateToken}`;
+
+    const response = await fetch(url, {
+      method: HttpMethod.POST,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-api-key': this.internalApiKey,
+      },
+      body: JSON.stringify({ access_token: accessToken }),
+    });
+
+    if (!response.ok) {
+      return { valid: false };
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Extract Bearer token from Authorization header.
+   */
+  private extractTokenFromHeader(request: { headers: { authorization?: string } }): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
   }

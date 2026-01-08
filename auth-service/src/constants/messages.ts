@@ -31,6 +31,7 @@ export const AUTH_MESSAGES = {
   TOKEN_REFRESHED: 'Token refreshed',
   TOKEN_REFRESH_FAILED: 'Token refresh failed',
   INVALID_REFRESH_TOKEN: 'Invalid or expired refresh token',
+  TOKEN_VALID: 'Token is valid',
 
   // User
   USER_FOUND: 'User found',
@@ -51,6 +52,29 @@ export const AUTH_MESSAGES = {
   PASSWORD_RESET_SUCCESS: 'Password reset successful',
   PASSWORD_RESET_FAILED: 'Password reset failed',
   INVALID_RESET_TOKEN: 'Invalid or expired reset token',
+} as const;
+
+/**
+ * Log messages for the Auth Service.
+ */
+export const LOG_MESSAGES = {
+  SERVICE_STARTED: (port: number) => `🔐 Auth Service running on http://0.0.0.0:${port}`,
+  HEALTH_ENDPOINT: (port: number) => `🩺 Health endpoint: http://0.0.0.0:${port}/health`,
+  USER_REGISTERED: (email: string) => `User registered: ${email}, verification code sent`,
+  VERIFICATION_EMAIL_SENT: (email: string) => `Verification email sent to ${email}`,
+  PASSWORD_RESET_EMAIL_SENT: (email: string) => `Password reset email sent to ${email}`,
+  BREVO_NOT_CONFIGURED: 'Brevo API not configured, skipping email send',
+  DEV_VERIFICATION_CODE: (email: string, code: string) => `[DEV] Verification code for ${email}: ${code}`,
+  DEV_PASSWORD_RESET_LINK: (email: string, link: string) => `[DEV] Password reset link for ${email}: ${link}`,
+  EMAIL_SEND_FAILED: (email: string) => `Failed to send email to ${email}`,
+} as const;
+
+/**
+ * Email subject lines.
+ */
+export const EMAIL_SUBJECTS = {
+  VERIFICATION: 'Verify your email - TempMail',
+  PASSWORD_RESET: 'Reset your password - TempMail',
 } as const;
 
 export type AuthMessageKey = keyof typeof AUTH_MESSAGES;

@@ -2,7 +2,7 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy the service directory (includes proto files in src/proto/)
+# Copy the service directory
 COPY gateway /app/gateway
 
 WORKDIR /app/gateway

@@ -1,83 +1,86 @@
-import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
-import { ClientGrpc } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
-import { GrpcClientService } from '../../grpc';
+import { Injectable, HttpException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { ERROR_MESSAGES } from '../../common/constants';
+import { HttpMethod } from '../../common/enums';
+import { ENDPOINTS } from '../../config';
 import {
-  PaymentServiceClient,
-  GetPlansRequest,
-  GetPlansResponse,
-  GetSubscriptionRequest,
-  SubscriptionResponse,
-  CreateCheckoutRequest,
-  CreateCheckoutResponse,
-  CancelSubscriptionRequest,
-  CancelSubscriptionResponse,
-  ResumeSubscriptionRequest,
-  ChangePlanRequest,
-  GetBillingHistoryRequest,
-  GetBillingHistoryResponse,
-  GetInvoiceRequest,
-  InvoiceResponse,
-  WebhookRequest,
-  WebhookResponse,
-  CreatePortalSessionRequest,
-  CreatePortalSessionResponse,
-} from '../../grpc/interfaces';
+  RazorpayGetPlansResponse,
+  RazorpayCreateOrderRequest,
+  RazorpayCreateOrderResponse,
+  RazorpayVerifyPaymentRequest,
+  RazorpayVerifyPaymentResponse,
+  RazorpayGetSubscriptionRequest,
+  RazorpaySubscriptionResponse,
+} from '../../common/interfaces';
 
+/**
+ * Gateway service for payment operations.
+ * Proxies HTTP requests to the Payment Service via HTTP.
+ * Uses ConfigService for base URLs, ENDPOINTS for paths.
+ */
 @Injectable()
-export class PaymentService implements OnModuleInit {
-  private paymentService: PaymentServiceClient;
+export class PaymentService {
+  private readonly paymentServiceUrl: string;
+  private readonly internalApiKey: string;
 
-  constructor(
-    @Inject('PAYMENT_PACKAGE') private client: ClientGrpc,
-    private readonly grpcClientService: GrpcClientService,
-  ) {}
-
-  onModuleInit() {
-    this.paymentService = this.client.getService<PaymentServiceClient>('PaymentService');
+  constructor(private configService: ConfigService) {
+    this.paymentServiceUrl = this.configService.get<string>('app.paymentServiceUrl') || '';
+    this.internalApiKey = this.configService.get<string>('app.internalApiKey') || '';
   }
 
-  async getPlans(data: GetPlansRequest): Promise<GetPlansResponse> {
-    return firstValueFrom(this.paymentService.getPlans(data, this.grpcClientService.getMetadata()));
+  private async httpRequest<T>(endpoint: string, method: HttpMethod, body?: unknown): Promise<T> {
+    const url = `${this.paymentServiceUrl}${endpoint}`;
+    
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-api-key': this.internalApiKey,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new HttpException(data.message || ERROR_MESSAGES.PAYMENT_SERVICE_ERROR, response.status);
+    }
+
+    return data as T;
   }
 
-  async getSubscription(data: GetSubscriptionRequest): Promise<SubscriptionResponse> {
-    return firstValueFrom(this.paymentService.getSubscription(data, this.grpcClientService.getMetadata()));
+  /** Get all available subscription plans */
+  async getPlans(): Promise<RazorpayGetPlansResponse> {
+    return this.httpRequest<RazorpayGetPlansResponse>(ENDPOINTS.payment.plans, HttpMethod.GET);
   }
 
-  async createCheckoutSession(data: CreateCheckoutRequest): Promise<CreateCheckoutResponse> {
-    return firstValueFrom(this.paymentService.createCheckoutSession(data, this.grpcClientService.getMetadata()));
+  /** Create a Razorpay order */
+  async createOrder(data: RazorpayCreateOrderRequest): Promise<RazorpayCreateOrderResponse> {
+    return this.httpRequest<RazorpayCreateOrderResponse>(ENDPOINTS.payment.createOrder, HttpMethod.POST, data);
   }
 
-  async cancelSubscription(data: CancelSubscriptionRequest): Promise<CancelSubscriptionResponse> {
-    return firstValueFrom(this.paymentService.cancelSubscription(data, this.grpcClientService.getMetadata()));
+  /** Verify Razorpay payment */
+  async verifyPayment(data: RazorpayVerifyPaymentRequest): Promise<RazorpayVerifyPaymentResponse> {
+    return this.httpRequest<RazorpayVerifyPaymentResponse>(ENDPOINTS.payment.verify, HttpMethod.POST, data);
   }
 
-  async resumeSubscription(data: ResumeSubscriptionRequest): Promise<SubscriptionResponse> {
-    return firstValueFrom(this.paymentService.resumeSubscription(data, this.grpcClientService.getMetadata()));
+  /** Get user's subscription */
+  async getSubscription(data: RazorpayGetSubscriptionRequest): Promise<RazorpaySubscriptionResponse> {
+    return this.httpRequest<RazorpaySubscriptionResponse>(ENDPOINTS.payment.subscription, HttpMethod.POST, data);
   }
 
-  async changePlan(data: ChangePlanRequest): Promise<SubscriptionResponse> {
-    return firstValueFrom(this.paymentService.changePlan(data, this.grpcClientService.getMetadata()));
+  /** Health check - proxy to payment service */
+  async health() {
+    return this.httpRequest(ENDPOINTS.payment.health, HttpMethod.GET);
   }
 
-  async getBillingHistory(data: GetBillingHistoryRequest): Promise<GetBillingHistoryResponse> {
-    return firstValueFrom(this.paymentService.getBillingHistory(data, this.grpcClientService.getMetadata()));
+  /** Readiness check - proxy to payment service */
+  async healthReady() {
+    return this.httpRequest(ENDPOINTS.payment.healthReady, HttpMethod.GET);
   }
 
-  async getInvoice(data: GetInvoiceRequest): Promise<InvoiceResponse> {
-    return firstValueFrom(this.paymentService.getInvoice(data, this.grpcClientService.getMetadata()));
-  }
-
-  async handleStripeWebhook(data: WebhookRequest): Promise<WebhookResponse> {
-    return firstValueFrom(this.paymentService.handleStripeWebhook(data, this.grpcClientService.getMetadata()));
-  }
-
-  async handleRazorpayWebhook(data: WebhookRequest): Promise<WebhookResponse> {
-    return firstValueFrom(this.paymentService.handleRazorpayWebhook(data, this.grpcClientService.getMetadata()));
-  }
-
-  async createPortalSession(data: CreatePortalSessionRequest): Promise<CreatePortalSessionResponse> {
-    return firstValueFrom(this.paymentService.createPortalSession(data, this.grpcClientService.getMetadata()));
+  /** Liveness check - proxy to payment service */
+  async healthLive() {
+    return this.httpRequest(ENDPOINTS.payment.healthLive, HttpMethod.GET);
   }
 }

@@ -1,7 +1,5 @@
-import { Controller, UseGuards } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
+import { Controller, Post, Put, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { InternalKeyGuard } from '../common';
 import {
   IAuthResponse,
   IGetUserRequest,
@@ -24,111 +22,122 @@ import {
   IValidateTokenResponse,
   IVerifyEmailRequest,
 } from '../interfaces';
+import { InternalApiKeyGuard } from '../guards';
 
 /**
- * gRPC controller for authentication operations.
+ * HTTP controller for authentication operations.
  * Delegates all business logic to AuthService.
- * All methods are exposed via gRPC and called by the Gateway service.
- * Protected by InternalKeyGuard to ensure only authorized services can call.
+ * All endpoints are called by the Gateway service.
+ * Protected by InternalApiKeyGuard to ensure only authorized services can call.
  */
-@Controller()
-@UseGuards(InternalKeyGuard)
+@Controller('auth')
+@UseGuards(InternalApiKeyGuard)
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   /**
-   * Register a new user and send verification email.
+   * POST /auth/register - Register a new user and send verification email.
    */
-  @GrpcMethod('AuthService', 'Register')
-  async register(data: IRegisterRequest): Promise<IRegisterResponse> {
+  @Post('register')
+  async register(@Body() data: IRegisterRequest): Promise<IRegisterResponse> {
     return this.authService.register(data);
   }
 
   /**
-   * Verify user email with 6-digit code.
+   * POST /auth/verify-email - Verify user email with 6-digit code.
    */
-  @GrpcMethod('AuthService', 'VerifyEmail')
-  async verifyEmail(data: IVerifyEmailRequest): Promise<IAuthResponse> {
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() data: IVerifyEmailRequest): Promise<IAuthResponse> {
     return this.authService.verifyEmail(data);
   }
 
   /**
-   * Resend email verification code.
+   * POST /auth/resend-verification - Resend email verification code.
    */
-  @GrpcMethod('AuthService', 'ResendVerificationCode')
-  async resendVerificationCode(data: IResendVerificationRequest): Promise<IResendVerificationResponse> {
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  async resendVerificationCode(@Body() data: IResendVerificationRequest): Promise<IResendVerificationResponse> {
     return this.authService.resendVerificationCode(data);
   }
 
   /**
-   * Authenticate user with email and password.
+   * POST /auth/login - Authenticate user with email and password.
    */
-  @GrpcMethod('AuthService', 'Login')
-  async login(data: ILoginRequest): Promise<IAuthResponse> {
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() data: ILoginRequest): Promise<IAuthResponse> {
     return this.authService.login(data);
   }
 
   /**
-   * End user session by blacklisting the access token.
+   * POST /auth/logout - End user session by blacklisting the access token.
    */
-  @GrpcMethod('AuthService', 'Logout')
-  async logout(data: ILogoutRequest): Promise<ILogoutResponse> {
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Body() data: ILogoutRequest): Promise<ILogoutResponse> {
     return this.authService.logout(data);
   }
 
   /**
-   * Exchange refresh token for new access/refresh token pair.
+   * POST /auth/refresh - Exchange refresh token for new access/refresh token pair.
    */
-  @GrpcMethod('AuthService', 'RefreshToken')
-  async refreshToken(data: IRefreshTokenRequest): Promise<IAuthResponse> {
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refreshToken(@Body() data: IRefreshTokenRequest): Promise<IAuthResponse> {
     return this.authService.refreshToken(data);
   }
 
   /**
-   * Validate access token and return user info if valid.
+   * POST /auth/validate-token - Validate access token and return user info if valid.
    */
-  @GrpcMethod('AuthService', 'ValidateToken')
-  async validateToken(data: IValidateTokenRequest): Promise<IValidateTokenResponse> {
+  @Post('validate-token')
+  @HttpCode(HttpStatus.OK)
+  async validateToken(@Body() data: IValidateTokenRequest): Promise<IValidateTokenResponse> {
     return this.authService.validateToken(data);
   }
 
   /**
-   * Get user profile by ID.
+   * POST /auth/get-user - Get user profile by ID.
    */
-  @GrpcMethod('AuthService', 'GetUser')
-  async getUser(data: IGetUserRequest): Promise<IUserResponse> {
+  @Post('get-user')
+  @HttpCode(HttpStatus.OK)
+  async getUser(@Body() data: IGetUserRequest): Promise<IUserResponse> {
     return this.authService.getUser(data);
   }
 
   /**
-   * Update user profile (name and/or avatar).
+   * PUT /auth/update-user - Update user profile (name and/or avatar).
    */
-  @GrpcMethod('AuthService', 'UpdateUser')
-  async updateUser(data: IUserUpdateRequest): Promise<IUserResponse> {
+  @Put('update-user')
+  async updateUser(@Body() data: IUserUpdateRequest): Promise<IUserResponse> {
     return this.authService.updateUser(data);
   }
 
   /**
-   * Authenticate via OAuth (Google or GitHub).
+   * POST /auth/oauth - Authenticate via OAuth (Google or GitHub).
    */
-  @GrpcMethod('AuthService', 'OAuthLogin')
-  async oAuthLogin(data: IOAuthLoginRequest): Promise<IAuthResponse> {
+  @Post('oauth')
+  @HttpCode(HttpStatus.OK)
+  async oAuthLogin(@Body() data: IOAuthLoginRequest): Promise<IAuthResponse> {
     return this.authService.oAuthLogin(data);
   }
 
   /**
-   * Request password reset email.
+   * POST /auth/password-reset/request - Request password reset email.
    */
-  @GrpcMethod('AuthService', 'RequestPasswordReset')
-  async requestPasswordReset(data: IPasswordResetRequest): Promise<IPasswordResetResponse> {
+  @Post('password-reset/request')
+  @HttpCode(HttpStatus.OK)
+  async requestPasswordReset(@Body() data: IPasswordResetRequest): Promise<IPasswordResetResponse> {
     return this.authService.requestPasswordReset(data);
   }
 
   /**
-   * Set new password using reset token.
+   * POST /auth/password-reset/confirm - Set new password using reset token.
    */
-  @GrpcMethod('AuthService', 'ResetPassword')
-  async resetPassword(data: IResetPasswordConfirmRequest): Promise<IResetPasswordConfirmResponse> {
+  @Post('password-reset/confirm')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() data: IResetPasswordConfirmRequest): Promise<IResetPasswordConfirmResponse> {
     return this.authService.resetPassword(data);
   }
 }

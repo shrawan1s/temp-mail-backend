@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma';
 import { RazorpayService } from './razorpay.service';
-import { PAYMENT_MESSAGES } from './constants';
 import {
   ICreateOrderResponse,
   IGetPlansResponse,
@@ -10,6 +9,14 @@ import {
   IVerifyPaymentResponse,
   PLAN_TIER_ORDER,
 } from '../interfaces';
+import {
+  PlanKey,
+  BillingCycle,
+  PaymentStatus,
+  SubscriptionStatus,
+  Currency,
+} from '../enums';
+import { PAYMENT_MESSAGES } from '../constants';
 
 /**
  * Service for managing payment operations.
@@ -65,7 +72,7 @@ export class PaymentService {
       throw new Error(PAYMENT_MESSAGES.PLAN_NOT_FOUND);
     }
 
-    const amount = billingCycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
+    const amount = billingCycle === BillingCycle.ANNUAL ? plan.priceAnnual : plan.priceMonthly;
     if (amount === 0) {
       throw new Error(PAYMENT_MESSAGES.ORDER_FREE_PLAN_ERROR);
     }
@@ -76,7 +83,7 @@ export class PaymentService {
       include: { plan: true },
     });
 
-    if (existingSubscription && existingSubscription.status === 'active') {
+    if (existingSubscription && existingSubscription.status === SubscriptionStatus.ACTIVE) {
       const currentPlan = existingSubscription.plan;
       const currentTier = PLAN_TIER_ORDER[currentPlan.key] ?? 0;
       const newTier = PLAN_TIER_ORDER[plan.key] ?? 0;
@@ -98,7 +105,7 @@ export class PaymentService {
         billingCycle,
         razorpayOrderId: order.id,
         amount,
-        status: 'pending',
+        status: PaymentStatus.PENDING,
       },
     });
 
@@ -109,7 +116,7 @@ export class PaymentService {
     return {
       orderId: order.id,
       amount,
-      currency: 'INR',
+      currency: Currency.INR,
       razorpayKeyId: this.configService.get<string>('app.razorpayKeyId') || '',
     };
   }
@@ -152,7 +159,7 @@ export class PaymentService {
     }
 
     // Check if payment was already verified
-    if (payment.status === 'success') {
+    if (payment.status === PaymentStatus.SUCCESS) {
       this.logger.warn(`${PAYMENT_MESSAGES.PAYMENT_ALREADY_VERIFIED}: ${orderId}`);
       return { success: false, message: PAYMENT_MESSAGES.PAYMENT_ALREADY_VERIFIED };
     }
@@ -169,7 +176,7 @@ export class PaymentService {
     // Calculate subscription expiry date
     const now = new Date();
     const expiresAt = new Date(now);
-    if (payment.billingCycle === 'annual') {
+    if (payment.billingCycle === BillingCycle.ANNUAL) {
       expiresAt.setDate(expiresAt.getDate() + 365);
     } else {
       expiresAt.setDate(expiresAt.getDate() + 30);
@@ -180,7 +187,7 @@ export class PaymentService {
       // Update payment status
       await tx.payment.update({
         where: { razorpayOrderId: orderId },
-        data: { razorpayPayId: paymentId, status: 'success' },
+        data: { razorpayPayId: paymentId, status: PaymentStatus.SUCCESS },
       });
 
       // Create or update subscription (upsert)
@@ -190,14 +197,14 @@ export class PaymentService {
           userId,
           planId: payment.planId,
           billingCycle: payment.billingCycle,
-          status: 'active',
+          status: SubscriptionStatus.ACTIVE,
           startedAt: now,
           expiresAt,
         },
         update: {
           planId: payment.planId,
           billingCycle: payment.billingCycle,
-          status: 'active',
+          status: SubscriptionStatus.ACTIVE,
           startedAt: now,
           expiresAt,
         },
@@ -231,10 +238,10 @@ export class PaymentService {
     // Return free plan if no userId provided
     if (!userId) {
       return {
-        planKey: 'free',
+        planKey: PlanKey.FREE,
         planName: 'Free',
-        status: 'active',
-        billingCycle: 'monthly',
+        status: SubscriptionStatus.ACTIVE,
+        billingCycle: BillingCycle.MONTHLY,
         expiresAt: '',
       };
     }
@@ -246,10 +253,10 @@ export class PaymentService {
 
     if (!subscription) {
       return {
-        planKey: 'free',
+        planKey: PlanKey.FREE,
         planName: 'Free',
-        status: 'active',
-        billingCycle: 'monthly',
+        status: SubscriptionStatus.ACTIVE,
+        billingCycle: BillingCycle.MONTHLY,
         expiresAt: '',
       };
     }

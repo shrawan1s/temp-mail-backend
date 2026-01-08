@@ -6,6 +6,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { API_CONFIG, LOG_MESSAGES } from './common/constants';
 
 async function bootstrap() {
   const logger = new Logger('Gateway');
@@ -36,12 +37,12 @@ async function bootstrap() {
     }),
   );
 
-  // API Prefix
-  app.setGlobalPrefix('api/v1');
+  // API Prefix from constants
+  app.setGlobalPrefix(API_CONFIG.PREFIX);
 
   await app.listen(port);
-  logger.log(`🚀 Gateway is running on http://localhost:${port}`);
-  logger.log(`📚 API available at http://localhost:${port}/api/v1`);
+  logger.log(LOG_MESSAGES.GATEWAY_STARTED(port));
+  logger.log(LOG_MESSAGES.API_AVAILABLE(port, API_CONFIG.PREFIX));
 }
 
 bootstrap();

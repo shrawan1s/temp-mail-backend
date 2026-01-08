@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Brevo from '@getbrevo/brevo';
+import { verificationCodeTemplate, passwordResetTemplate } from './templates';
+import { LOG_MESSAGES, EMAIL_SUBJECTS } from '../constants';
 
 /**
  * Service for sending transactional emails via Brevo (formerly Sendinblue).
@@ -34,8 +36,8 @@ export class EmailService {
    */
   async sendVerificationCode(to: string, name: string, code: string): Promise<boolean> {
     if (!this.apiInstance) {
-      this.logger.warn('Brevo API not configured, skipping email send');
-      this.logger.log(`[DEV] Verification code for ${to}: ${code}`);
+      this.logger.warn(LOG_MESSAGES.BREVO_NOT_CONFIGURED);
+      this.logger.log(LOG_MESSAGES.DEV_VERIFICATION_CODE(to, code));
       return true;
     }
 
@@ -43,25 +45,14 @@ export class EmailService {
       const sendSmtpEmail = new Brevo.SendSmtpEmail();
       sendSmtpEmail.sender = { email: this.senderEmail, name: this.senderName };
       sendSmtpEmail.to = [{ email: to, name }];
-      sendSmtpEmail.subject = 'Verify your email - TempMail';
-      sendSmtpEmail.htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Welcome to TempMail!</h2>
-          <p>Hi ${name},</p>
-          <p>Your verification code is:</p>
-          <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
-            ${code}
-          </div>
-          <p>This code expires in 10 minutes.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-        </div>
-      `;
+      sendSmtpEmail.subject = EMAIL_SUBJECTS.VERIFICATION;
+      sendSmtpEmail.htmlContent = verificationCodeTemplate(name, code);
 
       await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      this.logger.log(`Verification email sent to ${to}`);
+      this.logger.log(LOG_MESSAGES.VERIFICATION_EMAIL_SENT(to));
       return true;
     } catch (error) {
-      this.logger.error(`Failed to send verification email to ${to}:`, error);
+      this.logger.error(LOG_MESSAGES.EMAIL_SEND_FAILED(to), error);
       return false;
     }
   }
@@ -75,8 +66,8 @@ export class EmailService {
    */
   async sendPasswordResetEmail(to: string, name: string, resetLink: string): Promise<boolean> {
     if (!this.apiInstance) {
-      this.logger.warn('Brevo API not configured, skipping email send');
-      this.logger.log(`[DEV] Password reset link for ${to}: ${resetLink}`);
+      this.logger.warn(LOG_MESSAGES.BREVO_NOT_CONFIGURED);
+      this.logger.log(LOG_MESSAGES.DEV_PASSWORD_RESET_LINK(to, resetLink));
       return true;
     }
 
@@ -84,25 +75,14 @@ export class EmailService {
       const sendSmtpEmail = new Brevo.SendSmtpEmail();
       sendSmtpEmail.sender = { email: this.senderEmail, name: this.senderName };
       sendSmtpEmail.to = [{ email: to, name }];
-      sendSmtpEmail.subject = 'Reset your password - TempMail';
-      sendSmtpEmail.htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Password Reset Request</h2>
-          <p>Hi ${name},</p>
-          <p>Click the button below to reset your password:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">Reset Password</a>
-          </div>
-          <p>This link expires in 1 hour.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-        </div>
-      `;
+      sendSmtpEmail.subject = EMAIL_SUBJECTS.PASSWORD_RESET;
+      sendSmtpEmail.htmlContent = passwordResetTemplate(name, resetLink);
 
       await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      this.logger.log(`Password reset email sent to ${to}`);
+      this.logger.log(LOG_MESSAGES.PASSWORD_RESET_EMAIL_SENT(to));
       return true;
     } catch (error) {
-      this.logger.error(`Failed to send password reset email to ${to}:`, error);
+      this.logger.error(LOG_MESSAGES.EMAIL_SEND_FAILED(to), error);
       return false;
     }
   }

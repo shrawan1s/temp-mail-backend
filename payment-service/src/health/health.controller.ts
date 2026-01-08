@@ -1,14 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
 import { PrismaService } from '../prisma';
 
 /**
  * Health check controller for payment-service.
- * Provides both gRPC and HTTP health endpoints for monitoring and keep-alive.
+ * Provides HTTP health endpoints for monitoring and keep-alive.
  */
 @Controller('health')
 export class HealthController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * HTTP GET /health - Basic health check.
@@ -55,27 +54,5 @@ export class HealthController {
       status: 'alive',
       timestamp: new Date().toISOString(),
     };
-  }
-
-  /**
-   * gRPC Health check method.
-   * Can be called by gateway to verify service is running.
-   */
-  @GrpcMethod('PaymentService', 'HealthCheck')
-  async healthCheck() {
-    try {
-      await this.prisma.$queryRaw`SELECT 1`;
-      return {
-        status: 'ok',
-        service: 'payment-service',
-        database: 'connected',
-      };
-    } catch {
-      return {
-        status: 'degraded',
-        service: 'payment-service',
-        database: 'disconnected',
-      };
-    }
   }
 }

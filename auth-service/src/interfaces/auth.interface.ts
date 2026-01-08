@@ -1,3 +1,13 @@
+export interface IUser {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl ?: string | null;
+  plan: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Request interfaces - use snake_case to match proto
 export interface IRegisterRequest {
   email: string;

@@ -10,6 +10,7 @@ services:
     plan: free
     dockerContext: .
     dockerfilePath: auth-service/Dockerfile
+    healthCheckPath: /health
     envVars:
       # Database (external PostgreSQL)
       - key: DATABASE_URL
@@ -19,8 +20,6 @@ services:
         sync: false
       - key: NODE_ENV
         value: production
-      - key: AUTH_GRPC_URL
-        value: 0.0.0.0:5001
       - key: INTERNAL_API_KEY
         sync: false
       # JWT
@@ -31,7 +30,7 @@ services:
       # Brevo (Email)
       - key: BREVO_API_KEY
         sync: false
-      - key: BREVO_SENDER_EMAIL
+      - key: SENDER_EMAIL
         sync: false
       - key: SENDER_NAME
         sync: false
@@ -70,6 +69,7 @@ services:
     plan: free
     dockerContext: .
     dockerfilePath: payment-service/Dockerfile
+    healthCheckPath: /health
     envVars:
       # Database (external PostgreSQL - same as auth-service)
       - key: DATABASE_URL
@@ -79,8 +79,6 @@ services:
         sync: false
       - key: NODE_ENV
         value: production
-      - key: PAYMENT_GRPC_URL
-        value: 0.0.0.0:5002
       - key: INTERNAL_API_KEY
         sync: false
       # Razorpay
@@ -108,6 +106,7 @@ services:
     plan: free
     dockerContext: .
     dockerfilePath: gateway/Dockerfile
+    healthCheckPath: /api/v1/health
     envVars:
       # Server
       - key: PORT
@@ -116,14 +115,10 @@ services:
         value: production
       - key: INTERNAL_API_KEY
         sync: false
-      # gRPC Service URLs (use public Render URLs with :443)
+      # HTTP Service URLs (Service Discovery)
       - key: AUTH_SERVICE_URL
         sync: false
       - key: PAYMENT_SERVICE_URL
-        sync: false
-      - key: MAILBOX_SERVICE_URL
-        sync: false
-      - key: MAIL_SERVICE_URL
         sync: false
       # JWT (for token validation)
       - key: JWT_SECRET
