@@ -2,6 +2,7 @@
  * Centralized response messages for the Payment Service.
  * Update messages here to change them across the entire service.
  */
+
 export const PAYMENT_MESSAGES = {
   // Plans
   PLANS_FETCH_SUCCESS: 'Plans fetched successfully',
@@ -29,6 +30,16 @@ export const PAYMENT_MESSAGES = {
   SUBSCRIPTION_NOT_FOUND: 'No active subscription found',
   SUBSCRIPTION_CREATED: 'Subscription created successfully',
   SUBSCRIPTION_UPDATED: 'Subscription updated successfully',
+} as const;
+
+/**
+ * Log messages for the Payment Service.
+ */
+export const LOG_MESSAGES = {
+  SERVICE_STARTED: (port: number) => `💳 Payment Service running on http://0.0.0.0:${port}`,
+  HEALTH_ENDPOINT: (port: number) => `🩺 Health endpoint: http://0.0.0.0:${port}/health`,
+  ORDER_CREATED: (orderId: string) => `Order created: ${orderId}`,
+  PAYMENT_VERIFIED: (orderId: string) => `Payment verified for order: ${orderId}`,
 } as const;
 
 export type PaymentMessageKey = keyof typeof PAYMENT_MESSAGES;

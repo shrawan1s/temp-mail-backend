@@ -7,4 +7,4 @@ import { RazorpayService } from './razorpay.service';
     controllers: [PaymentController],
     providers: [PaymentService, RazorpayService],
 })
-export class PaymentModule { }
+export class PaymentModule {}

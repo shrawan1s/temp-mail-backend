@@ -1,6 +1,5 @@
 import { Controller, Get, Post, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { PaymentService } from './payment.service';
-import { InternalApiKeyGuard } from '../common';
 import {
   ICreateOrderRequest,
   ICreateOrderResponse,
@@ -10,6 +9,7 @@ import {
   IVerifyPaymentRequest,
   IVerifyPaymentResponse,
 } from '../interfaces';
+import { InternalApiKeyGuard } from '../guards';
 
 /**
  * HTTP controller for payment operations.
