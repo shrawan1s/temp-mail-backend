@@ -2,15 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { join } from 'path';
-import { credentials } from '@grpc/grpc-js';
 import { appConfig, throttleConfig } from './config';
 import { GlobalExceptionFilter } from './common/filters';
 import { JwtAuthGuard } from './common/guards';
-import { GrpcModule } from './grpc';
 import { AuthModule } from './modules/auth/auth.module';
-import { MailboxModule } from './modules/mailbox/mailbox.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { HealthModule } from './modules/health/health.module';
 
@@ -32,41 +27,8 @@ import { HealthModule } from './modules/health/health.module';
       }]),
     }),
 
-    // Auth gRPC Client (for JWT Guard - used globally)
-    ClientsModule.registerAsync([
-      {
-        name: 'AUTH_PACKAGE',
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => {
-          const isProduction = configService.get('app.nodeEnv') === 'production';
-          return {
-            transport: Transport.GRPC,
-            options: {
-              package: 'auth',
-              protoPath: join(__dirname, 'proto/auth.proto'),
-              url: configService.get<string>('app.authServiceUrl'),
-              // Use SSL for production (public URLs), insecure for local development
-              credentials: isProduction
-                ? credentials.createSsl()
-                : credentials.createInsecure(),
-              loader: {
-                keepCase: true,
-                longs: String,
-                enums: String,
-                defaults: true,
-                oneofs: true,
-              },
-            },
-          };
-        },
-      },
-    ]),
-
     // Feature Modules
-    GrpcModule,
     AuthModule,
-    MailboxModule,
     PaymentModule,
     HealthModule,
   ],

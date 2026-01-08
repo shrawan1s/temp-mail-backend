@@ -1,9 +1,9 @@
-import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
-import { ClientGrpc } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
-import { GrpcClientService } from '../../grpc';
+import { Injectable, HttpException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { ERROR_MESSAGES } from '../../common/constants';
+import { HttpMethod } from '../../common/enums';
+import { ENDPOINTS } from '../../config';
 import {
-  AuthServiceClient,
   AuthResponse,
   RegisterRequest,
   RegisterResponse,
@@ -22,78 +22,96 @@ import {
   GetUserRequest,
   UpdateUserRequest,
   UserResponse,
-} from '../../grpc/interfaces';
+} from '../../common/interfaces';
 
 /**
  * Gateway service for authentication operations.
- * Proxies HTTP requests to the Auth Service via gRPC.
- * Includes internal API key in all gRPC calls for service authentication.
+ * Proxies HTTP requests to the Auth Service via HTTP.
+ * Uses ConfigService for base URLs, ENDPOINTS for paths.
  */
 @Injectable()
-export class AuthService implements OnModuleInit {
-  private authService: AuthServiceClient;
+export class AuthService {
+  private readonly authServiceUrl: string;
+  private readonly internalApiKey: string;
 
-  constructor(
-    @Inject('AUTH_PACKAGE') private client: ClientGrpc,
-    private readonly grpcClientService: GrpcClientService,
-  ) {}
+  constructor(private configService: ConfigService) {
+    this.authServiceUrl = this.configService.get<string>('app.authServiceUrl') || '';
+    this.internalApiKey = this.configService.get<string>('app.internalApiKey') || '';
+  }
 
-  onModuleInit() {
-    this.authService = this.client.getService<AuthServiceClient>('AuthService');
+  private async httpRequest<T>(endpoint: string, method: HttpMethod, body?: unknown): Promise<T> {
+    const url = `${this.authServiceUrl}${endpoint}`;
+    
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-api-key': this.internalApiKey,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new HttpException(data.message || ERROR_MESSAGES.AUTH_SERVICE_ERROR, response.status);
+    }
+
+    return data as T;
   }
 
   /** Register a new user account */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
-    return firstValueFrom(this.authService.register(data, this.grpcClientService.getMetadata()));
+    return this.httpRequest<RegisterResponse>(ENDPOINTS.auth.register, HttpMethod.POST, data);
   }
 
   /** Verify user email with 6-digit code */
   async verifyEmail(data: VerifyEmailRequest): Promise<AuthResponse> {
-    return firstValueFrom(this.authService.verifyEmail(data, this.grpcClientService.getMetadata()));
+    return this.httpRequest<AuthResponse>(ENDPOINTS.auth.verifyEmail, HttpMethod.POST, data);
   }
 
   /** Resend email verification code */
   async resendVerificationCode(data: ResendVerificationRequest): Promise<ResendVerificationResponse> {
-    return firstValueFrom(this.authService.resendVerificationCode(data, this.grpcClientService.getMetadata()));
+    return this.httpRequest<ResendVerificationResponse>(ENDPOINTS.auth.resendVerification, HttpMethod.POST, data);
   }
 
   /** Authenticate user with email/password */
   async login(data: LoginRequest): Promise<AuthResponse> {
-    return firstValueFrom(this.authService.login(data, this.grpcClientService.getMetadata()));
+    return this.httpRequest<AuthResponse>(ENDPOINTS.auth.login, HttpMethod.POST, data);
   }
 
   /** Revoke user's current session */
   async logout(data: LogoutRequest): Promise<LogoutResponse> {
-    return firstValueFrom(this.authService.logout(data, this.grpcClientService.getMetadata()));
+    return this.httpRequest<LogoutResponse>(ENDPOINTS.auth.logout, HttpMethod.POST, data);
   }
 
   /** Get new tokens using refresh token */
   async refreshToken(data: RefreshTokenRequest): Promise<AuthResponse> {
-    return firstValueFrom(this.authService.refreshToken(data, this.grpcClientService.getMetadata()));
+    return this.httpRequest<AuthResponse>(ENDPOINTS.auth.refresh, HttpMethod.POST, data);
   }
 
   /** Authenticate via Google or GitHub OAuth */
   async oAuthLogin(data: OAuthLoginRequest): Promise<AuthResponse> {
-    return firstValueFrom(this.authService.oAuthLogin(data, this.grpcClientService.getMetadata()));
+    return this.httpRequest<AuthResponse>(ENDPOINTS.auth.oauth, HttpMethod.POST, data);
   }
 
   /** Request password reset email */
   async requestPasswordReset(data: PasswordResetRequest): Promise<PasswordResetResponse> {
-    return firstValueFrom(this.authService.requestPasswordReset(data, this.grpcClientService.getMetadata()));
+    return this.httpRequest<PasswordResetResponse>(ENDPOINTS.auth.passwordResetRequest, HttpMethod.POST, data);
   }
 
   /** Set new password using reset token */
   async resetPassword(data: ResetPasswordConfirmRequest): Promise<ResetPasswordConfirmResponse> {
-    return firstValueFrom(this.authService.resetPassword(data, this.grpcClientService.getMetadata()));
+    return this.httpRequest<ResetPasswordConfirmResponse>(ENDPOINTS.auth.passwordResetConfirm, HttpMethod.POST, data);
   }
 
   /** Get user profile by ID */
   async getUser(data: GetUserRequest): Promise<UserResponse> {
-    return firstValueFrom(this.authService.getUser(data, this.grpcClientService.getMetadata()));
+    return this.httpRequest<UserResponse>(ENDPOINTS.auth.getUser, HttpMethod.POST, data);
   }
 
   /** Update user profile (name, avatar) */
   async updateUser(data: UpdateUserRequest): Promise<UserResponse> {
-    return firstValueFrom(this.authService.updateUser(data, this.grpcClientService.getMetadata()));
+    return this.httpRequest<UserResponse>(ENDPOINTS.auth.updateUser, HttpMethod.PUT, data);
   }
 }

@@ -2,45 +2,34 @@ import 'dotenv/config';
 import 'newrelic';
 
 import { NestFactory } from '@nestjs/core';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
-import { Logger } from '@nestjs/common';
-import { join } from 'path';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const logger = new Logger('PaymentService');
 
-  // Create HTTP app for health checks (Render requires an HTTP port)
-  const httpApp = await NestFactory.create(AppModule);
-  const configService = httpApp.get(ConfigService);
+  const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
-  const httpPort = configService.get<number>('app.httpPort', 3002);
-  const grpcUrl = configService.get<string>('app.grpcUrl');
+  const port = configService.get<number>('app.httpPort', 3002);
 
-  // Start HTTP server for health checks
-  await httpApp.listen(httpPort, '0.0.0.0');
-  logger.log(`🩺 Health endpoint available at http://0.0.0.0:${httpPort}/health`);
-
-  // Connect gRPC microservice to the same app
-  httpApp.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.GRPC,
-    options: {
-      package: 'payment',
-      protoPath: join(__dirname, 'proto/payment.proto'),
-      url: grpcUrl,
-      loader: {
-        keepCase: true,
-        longs: String,
-        enums: String,
-        defaults: true,
-        oneofs: true,
-      },
-    },
+  // Enable CORS for gateway communication
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-internal-api-key'],
   });
 
-  await httpApp.startAllMicroservices();
-  logger.log(`💳 Payment Service running on ${grpcUrl} (gRPC)`);
+  // Global validation pipe
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+  }));
+
+  await app.listen(port, '0.0.0.0');
+  logger.log(`💳 Payment Service running on http://0.0.0.0:${port}`);
+  logger.log(`🩺 Health endpoint: http://0.0.0.0:${port}/health`);
 }
 
 bootstrap();

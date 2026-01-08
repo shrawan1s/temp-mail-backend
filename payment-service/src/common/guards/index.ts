@@ -1,1 +1,1 @@
-export * from './internal-key.guard';
+export * from './internal-api-key.guard';

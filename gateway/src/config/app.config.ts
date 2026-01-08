@@ -1,15 +1,15 @@
 import { registerAs } from '@nestjs/config';
 
 export default registerAs('app', () => ({
+  // Server
   port: parseInt(process.env.PORT || '5000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   internalApiKey: process.env.INTERNAL_API_KEY || '',
   
-  // Service URLs (gRPC)
-  authServiceUrl: process.env.AUTH_SERVICE_URL || '0.0.0.0:5001',
-  paymentServiceUrl: process.env.PAYMENT_SERVICE_URL || '0.0.0.0:5002',
-  mailboxServiceUrl: process.env.MAILBOX_SERVICE_URL || '0.0.0.0:5003',
+  // Service Base URLs
+  authServiceUrl: process.env.AUTH_SERVICE_URL || 'http://localhost:5001',
+  paymentServiceUrl: process.env.PAYMENT_SERVICE_URL || 'http://localhost:5002',
   
   // Redis
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
