@@ -8,7 +8,7 @@ RUN apk add --no-cache openssl
 # Copy the shared database package (linked dependency)
 COPY database /app/database
 
-# Copy the service directory (includes proto files in src/proto/)
+# Copy the service directory
 COPY auth-service /app/auth-service
 
 # Build the database package first (generates Prisma client + compiles TS)
