@@ -17,11 +17,17 @@ export const ENDPOINTS = {
     passwordResetConfirm: '/auth/password-reset/confirm',
     getUser: '/auth/get-user',
     updateUser: '/auth/update-user',
+    health: '/health',
+    healthReady: '/health/ready',
+    healthLive: '/health/live',
   },
   payment: {
     plans: '/payment/plans',
     createOrder: '/payment/create-order',
     verify: '/payment/verify',
     subscription: '/payment/subscription',
+    health: '/health',
+    healthReady: '/health/ready',
+    healthLive: '/health/live',
   },
 } as const;

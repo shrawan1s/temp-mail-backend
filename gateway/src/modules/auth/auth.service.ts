@@ -114,4 +114,19 @@ export class AuthService {
   async updateUser(data: UpdateUserRequest): Promise<UserResponse> {
     return this.httpRequest<UserResponse>(ENDPOINTS.auth.updateUser, HttpMethod.PUT, data);
   }
+
+  /** Health check - proxy to auth service */
+  async health() {
+    return this.httpRequest(ENDPOINTS.auth.health, HttpMethod.GET);
+  }
+
+  /** Readiness check - proxy to auth service */
+  async healthReady() {
+    return this.httpRequest(ENDPOINTS.auth.healthReady, HttpMethod.GET);
+  }
+
+  /** Liveness check - proxy to auth service */
+  async healthLive() {
+    return this.httpRequest(ENDPOINTS.auth.healthLive, HttpMethod.GET);
+  }
 }

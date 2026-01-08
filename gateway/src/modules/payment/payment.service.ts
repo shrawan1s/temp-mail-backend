@@ -68,4 +68,19 @@ export class PaymentService {
   async getSubscription(data: RazorpayGetSubscriptionRequest): Promise<RazorpaySubscriptionResponse> {
     return this.httpRequest<RazorpaySubscriptionResponse>(ENDPOINTS.payment.subscription, HttpMethod.POST, data);
   }
+
+  /** Health check - proxy to payment service */
+  async health() {
+    return this.httpRequest(ENDPOINTS.payment.health, HttpMethod.GET);
+  }
+
+  /** Readiness check - proxy to payment service */
+  async healthReady() {
+    return this.httpRequest(ENDPOINTS.payment.healthReady, HttpMethod.GET);
+  }
+
+  /** Liveness check - proxy to payment service */
+  async healthLive() {
+    return this.httpRequest(ENDPOINTS.payment.healthLive, HttpMethod.GET);
+  }
 }

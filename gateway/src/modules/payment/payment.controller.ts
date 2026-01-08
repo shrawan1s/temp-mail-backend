@@ -61,4 +61,35 @@ export class PaymentController {
     const userId = req.user?.userId || '';
     return this.paymentService.getSubscription({ userId });
   }
+
+  /**
+   * GET /payment/health - Health check for payment service.
+   * Public endpoint for monitoring.
+   * @returns Health status from payment service
+   */
+  @Public()
+  @Get('health')
+  async health() {
+    return this.paymentService.health();
+  }
+
+  /**
+   * GET /payment/health/ready - Readiness check for payment service.
+   * Public endpoint for monitoring.
+   */
+  @Public()
+  @Get('health/ready')
+  async healthReady() {
+    return this.paymentService.healthReady();
+  }
+
+  /**
+   * GET /payment/health/live - Liveness check for payment service.
+   * Public endpoint for monitoring.
+   */
+  @Public()
+  @Get('health/live')
+  async healthLive() {
+    return this.paymentService.healthLive();
+  }
 }

@@ -151,4 +151,35 @@ export class AuthController {
       avatar_url: dto.avatarUrl,
     });
   }
+
+  /**
+   * GET /auth/health - Health check for auth service.
+   * Public endpoint for monitoring.
+   * @returns Health status from auth service
+   */
+  @Public()
+  @Get('health')
+  async health() {
+    return this.authService.health();
+  }
+
+  /**
+   * GET /auth/health/ready - Readiness check for auth service.
+   * Public endpoint for monitoring.
+   */
+  @Public()
+  @Get('health/ready')
+  async healthReady() {
+    return this.authService.healthReady();
+  }
+
+  /**
+   * GET /auth/health/live - Liveness check for auth service.
+   * Public endpoint for monitoring.
+   */
+  @Public()
+  @Get('health/live')
+  async healthLive() {
+    return this.authService.healthLive();
+  }
 }
