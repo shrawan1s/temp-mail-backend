@@ -11,7 +11,7 @@ export default registerAs('app', () => ({
   
   // Brevo (Email)
   brevoApiKey: process.env.BREVO_API_KEY || '',
-  brevoSenderEmail: process.env.BREVO_SENDER_EMAIL || 'noreply@temp-email.com',
+  brevoSenderEmail: process.env.SENDER_EMAIL || '',
   senderName: process.env.SENDER_NAME || '',
   
   // OAuth - Google
