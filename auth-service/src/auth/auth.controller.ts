@@ -1,6 +1,5 @@
 import { Controller, Post, Put, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { InternalApiKeyGuard } from '../common';
 import {
   IAuthResponse,
   IGetUserRequest,
@@ -23,6 +22,7 @@ import {
   IValidateTokenResponse,
   IVerifyEmailRequest,
 } from '../interfaces';
+import { InternalApiKeyGuard } from '../guards';
 
 /**
  * HTTP controller for authentication operations.

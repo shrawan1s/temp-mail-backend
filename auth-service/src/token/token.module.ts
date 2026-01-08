@@ -11,7 +11,7 @@ import { TokenService } from './token.service';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('jwt.secret'),
         signOptions: {
-          expiresIn: configService.get<string>('jwt.accessExpiresIn') || '15m',
+          expiresIn: configService.get<string>('jwt.accessExpiresIn') || '',
         } as JwtSignOptions,
       }),
     }),
@@ -19,4 +19,4 @@ import { TokenService } from './token.service';
   providers: [TokenService],
   exports: [TokenService, JwtModule],
 })
-export class TokenModule { }
+export class TokenModule {}

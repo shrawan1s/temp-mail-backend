@@ -21,6 +21,7 @@ import {
   IResendVerificationResponse,
   IResetPasswordConfirmRequest,
   IResetPasswordConfirmResponse,
+  IUser,
   IUserDto,
   IUserResponse,
   IUserUpdateRequest,
@@ -46,15 +47,7 @@ export class AuthService {
   ) {}
 
   /** Convert Prisma User model to DTO for response */
-  private toUserDto(user: {
-    id: string;
-    email: string;
-    name: string;
-    avatarUrl?: string | null;
-    plan: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }): IUserDto {
+  private toUserDto(user: IUser): IUserDto {
     return {
       id: user.id,
       email: user.email,

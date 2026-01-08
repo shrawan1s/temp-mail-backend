@@ -2,8 +2,7 @@ import { registerAs } from '@nestjs/config';
 
 export default registerAs('app', () => ({
   nodeEnv: process.env.NODE_ENV || 'development',
-  httpPort: parseInt(process.env.PORT || '3001', 10),
-  grpcUrl: process.env.AUTH_GRPC_URL || '0.0.0.0:5001',
+  httpPort: parseInt(process.env.PORT || '5001', 10),
   internalApiKey: process.env.INTERNAL_API_KEY || '',
   
   // JWT

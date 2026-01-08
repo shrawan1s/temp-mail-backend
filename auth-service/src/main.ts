@@ -5,6 +5,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { LOG_MESSAGES, CORS_METHODS } from './constants';
 
 async function bootstrap() {
   const logger = new Logger('AuthService');
@@ -12,12 +13,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  const port = configService.get<number>('app.httpPort', 3001);
+  const port = configService.get<number>('app.httpPort', 5001);
 
   // Enable CORS for gateway communication
   app.enableCors({
     origin: '*',
-    methods: 'GET, HEAD, PUT, PATCH, POST, DELETE',
+    methods: CORS_METHODS,
     allowedHeaders: ['Content-Type', 'Authorization', 'x-internal-api-key'],
   });
 
@@ -27,9 +28,9 @@ async function bootstrap() {
     transform: true,
   }));
 
-  await app.listen(port, '0.0.0.0');
-  logger.log(`🔐 Auth Service running on http://0.0.0.0:${port}`);
-  logger.log(`🩺 Health endpoint: http://0.0.0.0:${port}/health`);
+  await app.listen(port);
+  logger.log(LOG_MESSAGES.SERVICE_STARTED(port));
+  logger.log(LOG_MESSAGES.HEALTH_ENDPOINT(port));
 }
 
 bootstrap();

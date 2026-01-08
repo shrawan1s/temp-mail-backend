@@ -56,26 +56,4 @@ export class HealthController {
       timestamp: new Date().toISOString(),
     };
   }
-
-  /**
-   * gRPC Health check method.
-   * Can be called by gateway to verify service is running.
-   */
-  @GrpcMethod('AuthService', 'HealthCheck')
-  async healthCheck() {
-    try {
-      await this.prisma.$queryRaw`SELECT 1`;
-      return {
-        status: 'ok',
-        service: 'auth-service',
-        database: 'connected',
-      };
-    } catch {
-      return {
-        status: 'degraded',
-        service: 'auth-service',
-        database: 'disconnected',
-      };
-    }
-  }
 }
