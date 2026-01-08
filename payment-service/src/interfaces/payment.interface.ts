@@ -3,7 +3,7 @@
  * These interfaces define the contract for payment-related operations.
  */
 
-import { PlanKey } from "../enums";
+import { PlanKey } from '../enums';
 
 // ============= Plan Interfaces =============
 

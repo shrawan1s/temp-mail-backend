@@ -1,6 +1,6 @@
 # Gateway Service
 
-The Gateway is the API entry point for the TempMail Pro application. It exposes REST endpoints and proxies requests to backend microservices via gRPC.
+The Gateway is the API entry point for the TempMail Pro application. It exposes REST endpoints and proxies requests to backend microservices via HTTP.
 
 ## Architecture
 
@@ -14,30 +14,32 @@ The Gateway is the API entry point for the TempMail Pro application. It exposes 
 ┌────────────────────────────────────────────────────────────────────┐
 │                           GATEWAY                                  │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
-│  │ Auth Module  │  │ Mail Module  │  │ Payment Mod  │  ...         │
+│  │ Auth Module  │  │Health Module │  │ Payment Mod  │  ...         │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘              │
-│         │ gRPC            │ gRPC            │ gRPC                 │
+│         │ HTTP            │ HTTP            │ HTTP                 │
 └─────────┼─────────────────┼─────────────────┼──────────────────────┘
           ▼                 ▼                 ▼
    ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
-   │Auth Service │   │Mail Service │   │Payment Svc  │
+   │Auth Service │   │    Health   │   │Payment Svc  │
+   │  (HTTP)     │   │   Endpoints │   │   (HTTP)    │
    └─────────────┘   └─────────────┘   └─────────────┘
 ```
 
 ## Features
 
 - **REST API** - JSON API for frontend consumption
-- **gRPC Proxy** - Forwards requests to microservices
+- **HTTP Proxy** - Forwards requests to microservices via HTTP
 - **JWT Authentication** - Validates tokens via Auth Service
 - **Rate Limiting** - Protects against abuse
 - **CORS** - Configurable cross-origin settings
 - **Validation** - Request body validation with DTOs
 - **Monitoring** - New Relic APM integration
+- **Global Exception Filter** - Consistent error response format
 
 ## Tech Stack
 
 - **Framework**: NestJS
-- **Protocol**: HTTP/REST (external), gRPC (internal)
+- **Protocol**: HTTP/REST (external and internal)
 - **Validation**: class-validator, class-transformer
 - **Monitoring**: New Relic APM
 
@@ -46,20 +48,25 @@ The Gateway is the API entry point for the TempMail Pro application. It exposes 
 ```
 src/
 ├── common/
+│   ├── constants/          # Error messages, log messages, API config
 │   ├── decorators/         # @Public, @CurrentUser decorators
+│   ├── enums/              # HttpMethod enum
+│   ├── filters/            # GlobalExceptionFilter
 │   ├── guards/             # JwtAuthGuard
-│   ├── interfaces/         # Shared TypeScript interfaces
-│   └── filters/            # Exception filters
+│   └── interfaces/         # Shared TypeScript interfaces
 ├── config/                 # Configuration modules
-├── grpc/                   # gRPC interfaces and types
+│   ├── app.config.ts       # App & service URLs
+│   ├── endpoints.config.ts # Service endpoint paths
+│   └── throttle.config.ts  # Rate limiting config
 ├── modules/
-│   └── auth/               # Auth endpoints
-│       ├── auth.controller.ts  # REST endpoints
-│       ├── auth.service.ts     # gRPC client calls
-│       ├── auth.module.ts
-│       └── dto/                # Request validation DTOs
-├── app.module.ts           # Root module
-└── main.ts                 # Application bootstrap
+│   ├── auth/               # Auth endpoints
+│   │   ├── auth.controller.ts
+│   │   ├── auth.service.ts     # HTTP client calls
+│   │   └── dto/                # Request validation DTOs
+│   ├── payment/            # Payment endpoints
+│   └── health/             # Health check endpoints
+├── app.module.ts
+└── main.ts
 ```
 
 ## API Endpoints
@@ -91,119 +98,31 @@ src/
 
 ### Health
 
-| Method | Endpoint                  | Description                    | Auth |
-| ------ | ------------------------- | ------------------------------ | ---- |
-| GET    | `/api/v1/health`          | Basic health check             | No   |
-| GET    | `/api/v1/health/ready`    | Readiness check                | No   |
-| GET    | `/api/v1/health/live`     | Liveness check                 | No   |
+| Method | Endpoint               | Description        | Auth |
+| ------ | ---------------------- | ------------------ | ---- |
+| GET    | `/api/v1/health`       | Basic health check | No   |
+| GET    | `/api/v1/health/ready` | Readiness check    | No   |
+| GET    | `/api/v1/health/live`  | Liveness check     | No   |
 
-## Request/Response Examples
+## Standard Response Format
 
-### Register
-
-```bash
-POST /api/v1/auth/register
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!",
-  "name": "John Doe"
-}
-```
-
-Response:
+### Success Response
 
 ```json
 {
   "success": true,
-  "message": "Registration successful. Please check your email for verification code.",
-  "user_id": "uuid-here"
+  "data": { ... },
+  "message": "Operation successful"
 }
 ```
 
-### Verify Email
-
-```bash
-POST /api/v1/auth/verify-email
-Content-Type: application/json
-
-{
-  "userId": "uuid-here",
-  "code": "123456"
-}
-```
-
-Response:
+### Error Response
 
 ```json
 {
-  "success": true,
-  "message": "Email verified successfully",
-  "access_token": "eyJhbGc...",
-  "refresh_token": "uuid-here",
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "name": "John Doe",
-    "avatar_url": "",
-    "plan": "free"
-  }
-}
-```
-
-### Login
-
-```bash
-POST /api/v1/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!"
-}
-```
-
-Response:
-
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "access_token": "eyJhbGc...",
-  "refresh_token": "uuid-here",
-  "user": { ... }
-}
-```
-
-### OAuth Login
-
-```bash
-POST /api/v1/auth/oauth/google
-Content-Type: application/json
-
-{
-  "provider": "google",
-  "code": "auth-code-from-google",
-  "redirectUri": "https://yourapp.com/auth/callback"
-}
-```
-
-### Authenticated Request
-
-```bash
-GET /api/v1/auth/me
-Authorization: Bearer eyJhbGc...
-```
-
-### Refresh Token
-
-```bash
-POST /api/v1/auth/refresh
-Content-Type: application/json
-
-{
-  "refreshToken": "uuid-refresh-token"
+  "success": false,
+  "data": null,
+  "message": "Human-readable error message"
 }
 ```
 
@@ -213,7 +132,7 @@ Content-Type: application/json
 
 1. Client sends request with `Authorization: Bearer <token>` header
 2. `JwtAuthGuard` intercepts the request
-3. Guard calls Auth Service `ValidateToken` via gRPC
+3. Guard calls Auth Service `POST /validate-token` via HTTP
 4. If valid, user info is attached to request (`@CurrentUser()`)
 5. If invalid, returns 401 Unauthorized
 
@@ -232,7 +151,8 @@ async login(@Body() dto: LoginDto) { ... }
 ### Prerequisites
 
 - Node.js 18+
-- Auth Service running on gRPC port
+- Auth Service running on HTTP port 5001
+- Payment Service running on HTTP port 5002
 - pnpm
 
 ### Installation
@@ -247,18 +167,19 @@ pnpm start:dev
 
 ### Environment Variables
 
-Create a `.env` file (see `sample.env`):
+Create a `.env` file:
 
 ```env
 # Server
 PORT=5000
 NODE_ENV=development
 
-# gRPC Services
-AUTH_SERVICE_URL=localhost:50051
-MAIL_SERVICE_URL=localhost:50052
-MAILBOX_SERVICE_URL=localhost:50053
-PAYMENT_SERVICE_URL=localhost:50054
+# HTTP Services
+AUTH_SERVICE_URL=http://localhost:5001
+PAYMENT_SERVICE_URL=http://localhost:5002
+
+# Internal API Key (for service-to-service auth)
+INTERNAL_API_KEY=your-internal-api-key
 
 # CORS (frontend URL)
 CORS_ORIGIN=http://localhost:3000
@@ -272,61 +193,21 @@ NEW_RELIC_LICENSE_KEY=
 NEW_RELIC_APP_NAME=TempMail-Gateway
 ```
 
-## gRPC Configuration
+## Service Communication
 
-The Gateway connects to microservices via gRPC. Proto files are in `proto/`:
+The Gateway communicates with backend services via HTTP with internal API key authentication:
 
-```protobuf
-// proto/auth.proto
-syntax = "proto3";
-package auth;
-
-service AuthService {
-  rpc Register(RegisterRequest) returns (RegisterResponse);
-  rpc VerifyEmail(VerifyEmailRequest) returns (AuthResponse);
-  rpc ResendVerificationCode(ResendVerificationRequest) returns (ResendVerificationResponse);
-  rpc Login(LoginRequest) returns (AuthResponse);
-  rpc Logout(LogoutRequest) returns (LogoutResponse);
-  rpc RefreshToken(RefreshTokenRequest) returns (AuthResponse);
-  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
-  rpc GetUser(GetUserRequest) returns (UserResponse);
-  rpc UpdateUser(UpdateUserRequest) returns (UserResponse);
-  rpc OAuthLogin(OAuthLoginRequest) returns (AuthResponse);
-  rpc RequestPasswordReset(PasswordResetRequest) returns (PasswordResetResponse);
-  rpc ResetPassword(ResetPasswordConfirmRequest) returns (ResetPasswordConfirmResponse);
-}
+```typescript
+// Example: Calling Auth Service
+const response = await fetch(`${authServiceUrl}/validate-token`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-internal-api-key': internalApiKey,
+  },
+  body: JSON.stringify({ access_token: token }),
+});
 ```
-
-## Error Handling
-
-All endpoints return consistent error responses:
-
-```json
-{
-  "success": false,
-  "message": "Human-readable error message"
-}
-```
-
-HTTP status codes:
-
-- `200` - Success
-- `201` - Created (registration)
-- `400` - Bad Request (validation)
-- `401` - Unauthorized
-- `429` - Too Many Requests (rate limit)
-- `500` - Internal Server Error
-
-## Rate Limiting
-
-Configured via environment variables:
-
-- `THROTTLE_TTL`: Window in seconds (default: 60)
-- `THROTTLE_LIMIT`: Max requests per window (default: 100)
-
-## CORS
-
-Configured via `CORS_ORIGIN` environment variable. Supports credentials for cookie-based auth if needed.
 
 ## Scripts
 
@@ -337,15 +218,6 @@ pnpm start:prod   # Run production build
 pnpm lint         # ESLint
 pnpm test         # Run tests
 ```
-
-## Adding New Services
-
-1. Create proto file in `proto/`
-2. Generate interfaces in `src/grpc/`
-3. Create module in `src/modules/`
-4. Register gRPC client in module
-5. Implement controller with REST endpoints
-6. Add module to `app.module.ts`
 
 ## Monitoring
 

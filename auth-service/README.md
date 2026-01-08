@@ -1,21 +1,21 @@
 # Auth Service
 
-The Auth Service is a gRPC microservice that handles all authentication and user management operations for the TempMail Pro application.
+The Auth Service is an HTTP microservice that handles all authentication and user management operations for the TempMail Pro application.
 
 ## Architecture
 
 ```
-┌─────────────┐      gRPC       ┌──────────────┐
-│   Gateway   │ ──────────────► │ Auth Service │
-└─────────────┘                 └──────┬───────┘
-                                       │
-                    ┌──────────────────┼──────────────────┐
-                    │                  │                  │
-                    ▼                  ▼                  ▼
-             ┌──────────┐       ┌───────────┐      ┌───────────┐
-             │PostgreSQL│       │   Redis   │      │   Brevo   │
-             │(Prisma)  │       │ (Tokens)  │      │  (Email)  │
-             └──────────┘       └───────────┘      └───────────┘
+┌─────────────┐      HTTP        ┌──────────────┐
+│   Gateway   │ ──────────────►  │ Auth Service │
+└─────────────┘                  └──────┬───────┘
+                                        │
+                     ┌──────────────────┼──────────────────┐
+                     │                  │                  │
+                     ▼                  ▼                  ▼
+              ┌──────────┐       ┌───────────┐      ┌───────────┐
+              │PostgreSQL│       │   Redis   │      │   Brevo   │
+              │(Prisma)  │       │ (Tokens)  │      │  (Email)  │
+              └──────────┘       └───────────┘      └───────────┘
 ```
 
 ## Features
@@ -30,7 +30,7 @@ The Auth Service is a gRPC microservice that handles all authentication and user
 
 ## Tech Stack
 
-- **Framework**: NestJS with gRPC transport
+- **Framework**: NestJS with HTTP transport
 - **Database**: PostgreSQL via Prisma ORM
 - **Cache**: Redis for token blacklisting and sessions
 - **Email**: Brevo (formerly Sendinblue) for transactional emails
@@ -40,15 +40,17 @@ The Auth Service is a gRPC microservice that handles all authentication and user
 
 ```
 src/
-├── auth/                 # gRPC controller and module
-│   ├── auth.controller.ts  # gRPC methods (Register, Login, etc.)
+├── auth/                 # Controller and service
+│   ├── auth.controller.ts  # HTTP endpoints
+│   ├── auth.service.ts     # Business logic
 │   └── auth.module.ts
 ├── user/                 # User management
 │   └── user.service.ts     # CRUD, verification, password
 ├── token/                # Token management
 │   └── token.service.ts    # JWT, refresh tokens, password reset
 ├── email/                # Email service
-│   └── email.service.ts    # Verification codes, password reset emails
+│   ├── email.service.ts    # Brevo integration
+│   └── templates/          # Email templates
 ├── oauth/                # OAuth providers
 │   └── oauth.service.ts    # Google and GitHub OAuth flows
 ├── redis/                # Redis client
@@ -56,51 +58,49 @@ src/
 ├── prisma/               # Database client
 │   └── prisma.service.ts
 ├── config/               # Configuration modules
-├── constants/            # Response messages
+├── constants/            # Response messages, CORS constants
+├── guards/               # InternalApiKeyGuard
 ├── interfaces/           # TypeScript interfaces
 └── main.ts               # Application bootstrap
 ```
 
-## gRPC Methods
+## HTTP Endpoints
 
-| Method                   | Description                              | Auth Required |
-| ------------------------ | ---------------------------------------- | ------------- |
-| `Register`               | Create new user, send verification email | No            |
-| `VerifyEmail`            | Verify email with 6-digit code           | No            |
-| `ResendVerificationCode` | Resend verification email                | No            |
-| `Login`                  | Authenticate with email/password         | No            |
-| `Logout`                 | Blacklist access token                   | Yes           |
-| `RefreshToken`           | Get new token pair using refresh token   | No            |
-| `ValidateToken`          | Validate access token (used by Gateway)  | No            |
-| `GetUser`                | Get user profile by ID                   | Yes           |
-| `UpdateUser`             | Update user name/avatar                  | Yes           |
-| `OAuthLogin`             | Authenticate via Google/GitHub           | No            |
-| `RequestPasswordReset`   | Send password reset email                | No            |
-| `ResetPassword`          | Set new password with reset token        | No            |
-| `HealthCheck`            | Service health status with DB check      | No            |
+| Method | Endpoint                   | Description                          | Guard             |
+| ------ | -------------------------- | ------------------------------------ | ----------------- |
+| POST   | `/register`                | Create new user, send verification   | Internal API Key  |
+| POST   | `/verify-email`            | Verify email with 6-digit code       | Internal API Key  |
+| POST   | `/resend-verification`     | Resend verification email            | Internal API Key  |
+| POST   | `/login`                   | Authenticate with email/password     | Internal API Key  |
+| POST   | `/logout`                  | Blacklist access token               | Internal API Key  |
+| POST   | `/refresh-token`           | Get new token pair                   | Internal API Key  |
+| POST   | `/validate-token`          | Validate access token (for Gateway)  | Internal API Key  |
+| POST   | `/get-user`                | Get user profile by ID               | Internal API Key  |
+| PUT    | `/update-user`             | Update user name/avatar              | Internal API Key  |
+| POST   | `/oauth-login`             | Authenticate via Google/GitHub       | Internal API Key  |
+| POST   | `/request-password-reset`  | Send password reset email            | Internal API Key  |
+| POST   | `/reset-password`          | Set new password with reset token    | Internal API Key  |
 
-## HTTP Health Endpoints
-
-For deployment keep-alive and monitoring:
+## Health Endpoints
 
 | Endpoint        | Description                    | Response                           |
 | --------------- | ------------------------------ | ---------------------------------- |
-| `GET /health`       | Basic health check             | `{ status, service, timestamp }`   |
-| `GET /health/ready` | Readiness check (DB connected) | `{ status, database, timestamp }`  |
-| `GET /health/live`  | Liveness check                 | `{ status, timestamp }`            |
+| GET `/health`       | Basic health check             | `{ status, service, timestamp }`   |
+| GET `/health/ready` | Readiness check (DB connected) | `{ status, database, timestamp }`  |
+| GET `/health/live`  | Liveness check                 | `{ status, timestamp }`            |
 
 ## Authentication Flow
 
 ### Email/Password Registration
 
 ```
-1. Client → Gateway: POST /auth/register {email, password, name}
-2. Gateway → Auth Service: gRPC Register()
+1. Client → Gateway: POST /api/v1/auth/register {email, password, name}
+2. Gateway → Auth Service: POST /register (with x-internal-api-key)
 3. Auth Service: Create user, generate 6-digit code
 4. Auth Service → Brevo: Send verification email
 5. Auth Service → Gateway → Client: {success, user_id}
-6. Client → Gateway: POST /auth/verify-email {userId, code}
-7. Gateway → Auth Service: gRPC VerifyEmail()
+6. Client → Gateway: POST /api/v1/auth/verify-email {userId, code}
+7. Gateway → Auth Service: POST /verify-email
 8. Auth Service: Mark verified, generate tokens
 9. Auth Service → Gateway → Client: {tokens, user}
 ```
@@ -110,23 +110,12 @@ For deployment keep-alive and monitoring:
 ```
 1. Client: Redirect to Google/GitHub OAuth URL
 2. Provider: User authorizes, redirects with code
-3. Client → Gateway: POST /auth/oauth/google {code, redirectUri}
-4. Gateway → Auth Service: gRPC OAuthLogin()
+3. Client → Gateway: POST /api/v1/auth/oauth/google {code, redirectUri}
+4. Gateway → Auth Service: POST /oauth-login
 5. Auth Service → Google/GitHub: Exchange code for access token
 6. Auth Service → Google/GitHub: Fetch user info
 7. Auth Service: Find/create user, generate tokens
 8. Auth Service → Gateway → Client: {tokens, user}
-```
-
-### Token Refresh
-
-```
-1. Client: Access token expired
-2. Client → Gateway: POST /auth/refresh {refreshToken}
-3. Gateway → Auth Service: gRPC RefreshToken()
-4. Auth Service: Validate refresh token, delete old one (rotation)
-5. Auth Service: Generate new token pair
-6. Auth Service → Gateway → Client: {new tokens}
 ```
 
 ## Setup
@@ -156,12 +145,15 @@ pnpm start:dev
 
 ### Environment Variables
 
-Create a `.env` file (see `sample.env`):
+Create a `.env` file:
 
 ```env
 # Server
-PORT=50051
+PORT=5001
 NODE_ENV=development
+
+# Internal API Key (for service-to-service auth)
+INTERNAL_API_KEY=your-internal-api-key
 
 # Database
 DATABASE_URL="postgresql://user:pass@localhost:5432/temp_email_auth"
@@ -195,49 +187,12 @@ NEW_RELIC_LICENSE_KEY=
 NEW_RELIC_APP_NAME=TempMail-Auth
 ```
 
-## Database Schema
-
-```prisma
-model User {
-  id                     String    @id @default(uuid())
-  email                  String    @unique
-  password               String?
-  name                   String
-  avatarUrl              String?
-  isVerified             Boolean   @default(false)
-  verificationCode       String?
-  verificationCodeExpiry DateTime?
-  googleId               String?   @unique
-  githubId               String?   @unique
-  plan                   String    @default("free")
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
-}
-
-model RefreshToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String
-  expiresAt DateTime
-  user      User     @relation(...)
-}
-
-model PasswordReset {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  user      User     @relation(...)
-}
-```
-
 ## Security Features
 
 - **Password Hashing**: bcrypt with 10 rounds
 - **Token Blacklisting**: Revoked tokens stored in Redis until expiry
 - **Token Rotation**: Old refresh token deleted when new pair issued
-- **Rate Limiting**: Handled by Gateway
+- **Internal API Key**: Service-to-service authentication
 - **Input Validation**: DTO validation with class-validator
 
 ## Scripts
@@ -249,7 +204,3 @@ pnpm start:prod   # Run production build
 pnpm lint         # ESLint
 pnpm test         # Run tests
 ```
-
-## Proto Definition
-
-The gRPC interface is defined in `proto/auth.proto`. See the Gateway README for the full proto definition.

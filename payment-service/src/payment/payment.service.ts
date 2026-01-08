@@ -30,7 +30,7 @@ export class PaymentService {
     private prisma: PrismaService,
     private razorpayService: RazorpayService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   /**
    * Fetch all active subscription plans.
