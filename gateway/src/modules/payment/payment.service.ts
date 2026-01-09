@@ -40,7 +40,14 @@ export class PaymentService {
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    const data = await response.json();
+    let data: any;
+    const responseText = await response.text();
+
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      data = { message: responseText || response.statusText };
+    }
 
     if (!response.ok) {
       throw new HttpException(data.message || ERROR_MESSAGES.PAYMENT_SERVICE_ERROR, response.status);
