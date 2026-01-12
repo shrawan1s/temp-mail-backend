@@ -1,5 +1,4 @@
 import { Controller, Get } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
 import { PrismaService } from '../prisma';
 
 /**

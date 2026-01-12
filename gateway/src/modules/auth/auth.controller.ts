@@ -8,6 +8,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { Public } from '../../common/decorators';
 import { CurrentUser } from '../../common/decorators';
@@ -158,6 +159,7 @@ export class AuthController {
    * @returns Health status from auth service
    */
   @Public()
+  @SkipThrottle()
   @Get('health')
   async health() {
     return this.authService.health();
@@ -168,6 +170,7 @@ export class AuthController {
    * Public endpoint for monitoring.
    */
   @Public()
+  @SkipThrottle()
   @Get('health/ready')
   async healthReady() {
     return this.authService.healthReady();
@@ -178,6 +181,7 @@ export class AuthController {
    * Public endpoint for monitoring.
    */
   @Public()
+  @SkipThrottle()
   @Get('health/live')
   async healthLive() {
     return this.authService.healthLive();
