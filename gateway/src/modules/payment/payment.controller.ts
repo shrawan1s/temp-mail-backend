@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Request } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators';
 import { PaymentService } from './payment.service';
 import { CreateOrderDto, VerifyPaymentDto } from './dto';
@@ -68,6 +69,7 @@ export class PaymentController {
    * @returns Health status from payment service
    */
   @Public()
+  @SkipThrottle()
   @Get('health')
   async health() {
     return this.paymentService.health();
@@ -78,6 +80,7 @@ export class PaymentController {
    * Public endpoint for monitoring.
    */
   @Public()
+  @SkipThrottle()
   @Get('health/ready')
   async healthReady() {
     return this.paymentService.healthReady();
@@ -88,6 +91,7 @@ export class PaymentController {
    * Public endpoint for monitoring.
    */
   @Public()
+  @SkipThrottle()
   @Get('health/live')
   async healthLive() {
     return this.paymentService.healthLive();
