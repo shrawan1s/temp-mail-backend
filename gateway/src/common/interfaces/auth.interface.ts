@@ -130,3 +130,51 @@ export interface ResetPasswordConfirmResponse {
   success: boolean;
   message: string;
 }
+
+export interface UserSettings {
+  dark_mode: boolean;
+  auto_refresh: boolean;
+  email_expiry: string;
+  notifications: boolean;
+  blocked_senders: string[];
+}
+
+export interface GetSettingsRequest {
+  user_id: string;
+}
+
+export interface SettingsResponse {
+  success: boolean;
+  message: string;
+  settings?: UserSettings;
+}
+
+export interface UpdateSettingsRequest {
+  user_id: string;
+  dark_mode?: boolean;
+  auto_refresh?: boolean;
+  email_expiry?: string;
+  notifications?: boolean;
+  blocked_senders?: string[];
+}
+
+export interface ChangePasswordRequest {
+  user_id: string;
+  current_password: string;
+  new_password: string;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface DeleteAccountRequest {
+  user_id: string;
+  password?: string;
+}
+
+export interface DeleteAccountResponse {
+  success: boolean;
+  message: string;
+}

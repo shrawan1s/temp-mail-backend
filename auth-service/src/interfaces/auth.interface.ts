@@ -123,3 +123,51 @@ export interface IResendVerificationResponse {
   success: boolean;
   message: string;
 }
+
+export interface IUserSettings {
+  dark_mode: boolean;
+  auto_refresh: boolean;
+  email_expiry: string;
+  notifications: boolean;
+  blocked_senders: string[];
+}
+
+export interface IGetSettingsRequest {
+  user_id: string;
+}
+
+export interface ISettingsResponse {
+  success: boolean;
+  message: string;
+  settings?: IUserSettings;
+}
+
+export interface IUpdateSettingsRequest {
+  user_id: string;
+  dark_mode?: boolean;
+  auto_refresh?: boolean;
+  email_expiry?: string;
+  notifications?: boolean;
+  blocked_senders?: string[];
+}
+
+export interface IChangePasswordRequest {
+  user_id: string;
+  current_password: string;
+  new_password: string;
+}
+
+export interface IChangePasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface IDeleteAccountRequest {
+  user_id: string;
+  password?: string;
+}
+
+export interface IDeleteAccountResponse {
+  success: boolean;
+  message: string;
+}

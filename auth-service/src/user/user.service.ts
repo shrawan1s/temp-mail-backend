@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma';
 import { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { LOG_MESSAGES } from '../constants';
 
 /**
  * Service for managing user accounts.
@@ -168,5 +169,55 @@ export class UserService {
     });
 
     return { success: true, user: updatedUser, code: verificationCode };
+  }
+
+  /**
+   * Get user settings, creating default settings if none exist.
+   */
+  async getOrCreateSettings(userId: string) {
+    let settings = await this.prisma.userSettings.findUnique({
+      where: { userId },
+    });
+
+    if (!settings) {
+      settings = await this.prisma.userSettings.create({
+        data: { userId },
+      });
+    }
+
+    return settings;
+  }
+
+  /**
+   * Update user settings.
+   */
+  async updateSettings(
+    userId: string,
+    data: {
+      darkMode?: boolean;
+      autoRefresh?: boolean;
+      emailExpiry?: string;
+      notifications?: boolean;
+      blockedSenders?: string[];
+    },
+  ) {
+    // Ensure settings exist first
+    await this.getOrCreateSettings(userId);
+
+    return this.prisma.userSettings.update({
+      where: { userId },
+      data,
+    });
+  }
+
+  /**
+   * Delete user and all related data.
+   * Cascade delete will handle related records.
+   */
+  async delete(userId: string): Promise<void> {
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+    this.logger.log(LOG_MESSAGES.USER_DELETED(userId));
   }
 }

@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, Length } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, Length, IsArray } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -74,4 +74,39 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   avatarUrl?: string;
+}
+
+export class UpdateSettingsDto {
+  @IsOptional()
+  darkMode?: boolean;
+
+  @IsOptional()
+  autoRefresh?: boolean;
+
+  @IsOptional()
+  @IsString()
+  emailExpiry?: string;
+
+  @IsOptional()
+  notifications?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  blockedSenders?: string[];
+}
+
+export class ChangePasswordDto {
+  @IsString()
+  currentPassword: string;
+
+  @IsString()
+  @MinLength(8)
+  newPassword: string;
+}
+
+export class DeleteAccountDto {
+  @IsOptional()
+  @IsString()
+  password?: string;
 }

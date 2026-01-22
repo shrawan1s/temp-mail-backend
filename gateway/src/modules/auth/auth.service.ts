@@ -22,6 +22,13 @@ import {
   GetUserRequest,
   UpdateUserRequest,
   UserResponse,
+  GetSettingsRequest,
+  SettingsResponse,
+  UpdateSettingsRequest,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
+  DeleteAccountRequest,
+  DeleteAccountResponse,
 } from '../../common/interfaces';
 
 /**
@@ -135,5 +142,25 @@ export class AuthService {
   /** Liveness check - proxy to auth service */
   async healthLive() {
     return this.httpRequest(ENDPOINTS.auth.healthLive, HttpMethod.GET);
+  }
+
+  /** Get user settings */
+  async getSettings(data: GetSettingsRequest): Promise<SettingsResponse> {
+    return this.httpRequest<SettingsResponse>(ENDPOINTS.auth.getSettings, HttpMethod.POST, data);
+  }
+
+  /** Update user settings */
+  async updateSettings(data: UpdateSettingsRequest): Promise<SettingsResponse> {
+    return this.httpRequest<SettingsResponse>(ENDPOINTS.auth.updateSettings, HttpMethod.PUT, data);
+  }
+
+  /** Change user password */
+  async changePassword(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+    return this.httpRequest<ChangePasswordResponse>(ENDPOINTS.auth.changePassword, HttpMethod.POST, data);
+  }
+
+  /** Delete user account */
+  async deleteAccount(data: DeleteAccountRequest): Promise<DeleteAccountResponse> {
+    return this.httpRequest<DeleteAccountResponse>(ENDPOINTS.auth.deleteAccount, HttpMethod.DELETE, data);
   }
 }

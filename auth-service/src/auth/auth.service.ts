@@ -4,7 +4,7 @@ import { UserService } from '../user';
 import { TokenService } from '../token';
 import { OAuthService } from '../oauth';
 import { EmailService } from '../email';
-import { AUTH_MESSAGES } from '../constants';
+import { AUTH_MESSAGES, LOG_MESSAGES } from '../constants';
 import {
   IAuthResponse,
   IGetUserRequest,
@@ -28,6 +28,13 @@ import {
   IValidateTokenRequest,
   IValidateTokenResponse,
   IVerifyEmailRequest,
+  IGetSettingsRequest,
+  ISettingsResponse,
+  IUpdateSettingsRequest,
+  IChangePasswordRequest,
+  IChangePasswordResponse,
+  IDeleteAccountRequest,
+  IDeleteAccountResponse,
 } from '../interfaces';
 
 /**
@@ -83,7 +90,7 @@ export class AuthService {
         await this.emailService.sendVerificationCode(user.email, user.name, user.verificationCode);
       }
 
-      this.logger.log(`User registered: ${user.email}, verification code sent`);
+      this.logger.log(LOG_MESSAGES.USER_REGISTERED(user.email));
 
       return {
         success: true,
@@ -91,7 +98,7 @@ export class AuthService {
         user_id: user.id,
       };
     } catch (error) {
-      this.logger.error('Registration error:', error);
+      this.logger.error(LOG_MESSAGES.REGISTRATION_ERROR, error);
       return {
         success: false,
         message: AUTH_MESSAGES.REGISTER_FAILED,
@@ -116,7 +123,7 @@ export class AuthService {
 
       const tokens = await this.tokenService.generateTokenPair(result.user.id, result.user.email);
 
-      this.logger.log(`Email verified: ${result.user.email}`);
+      this.logger.log(LOG_MESSAGES.EMAIL_VERIFIED(result.user.email));
 
       return {
         success: true,
@@ -126,7 +133,7 @@ export class AuthService {
         user: this.toUserDto(result.user),
       };
     } catch (error) {
-      this.logger.error('Verify email error:', error);
+      this.logger.error(LOG_MESSAGES.VERIFY_EMAIL_ERROR, error);
       return {
         success: false,
         message: AUTH_MESSAGES.VERIFY_FAILED,
@@ -151,14 +158,14 @@ export class AuthService {
 
       await this.emailService.sendVerificationCode(result.user.email, result.user.name, result.code);
 
-      this.logger.log(`Verification code resent to: ${result.user.email}`);
+      this.logger.log(LOG_MESSAGES.VERIFICATION_CODE_RESENT(result.user.email));
 
       return {
         success: true,
         message: AUTH_MESSAGES.RESEND_CODE_SUCCESS,
       };
     } catch (error) {
-      this.logger.error('Resend verification error:', error);
+      this.logger.error(LOG_MESSAGES.RESEND_VERIFICATION_ERROR, error);
       return {
         success: false,
         message: AUTH_MESSAGES.RESEND_CODE_FAILED,
@@ -198,7 +205,7 @@ export class AuthService {
 
       const tokens = await this.tokenService.generateTokenPair(user.id, user.email);
 
-      this.logger.log(`User logged in: ${user.email}`);
+      this.logger.log(LOG_MESSAGES.USER_LOGGED_IN(user.email));
 
       return {
         success: true,
@@ -208,7 +215,7 @@ export class AuthService {
         user: this.toUserDto(user),
       };
     } catch (error) {
-      this.logger.error('Login error:', error);
+      this.logger.error(LOG_MESSAGES.LOGIN_ERROR, error);
       return {
         success: false,
         message: AUTH_MESSAGES.LOGIN_FAILED,
@@ -223,14 +230,14 @@ export class AuthService {
     try {
       await this.tokenService.revokeAccessToken(data.access_token);
 
-      this.logger.log(`User logged out: ${data.user_id}`);
+      this.logger.log(LOG_MESSAGES.USER_LOGGED_OUT(data.user_id));
 
       return {
         success: true,
         message: AUTH_MESSAGES.LOGOUT_SUCCESS,
       };
     } catch (error) {
-      this.logger.error('Logout error:', error);
+      this.logger.error(LOG_MESSAGES.LOGOUT_ERROR, error);
       return {
         success: false,
         message: AUTH_MESSAGES.LOGOUT_FAILED,
@@ -259,7 +266,7 @@ export class AuthService {
         refresh_token: tokens.refreshToken,
       };
     } catch (error) {
-      this.logger.error('Token refresh error:', error);
+      this.logger.error(LOG_MESSAGES.TOKEN_REFRESH_ERROR, error);
       return {
         success: false,
         message: AUTH_MESSAGES.TOKEN_REFRESH_FAILED,
@@ -307,7 +314,7 @@ export class AuthService {
         user: this.toUserDto(user),
       };
     } catch (error) {
-      this.logger.error('Get user error:', error);
+      this.logger.error(LOG_MESSAGES.GET_USER_ERROR, error);
       return {
         success: false,
         message: AUTH_MESSAGES.USER_GET_FAILED,
@@ -332,7 +339,7 @@ export class AuthService {
         user: this.toUserDto(user),
       };
     } catch (error) {
-      this.logger.error('Update user error:', error);
+      this.logger.error(LOG_MESSAGES.UPDATE_USER_ERROR, error);
       return {
         success: false,
         message: AUTH_MESSAGES.USER_UPDATE_FAILED,
@@ -393,7 +400,7 @@ export class AuthService {
 
       const tokens = await this.tokenService.generateTokenPair(user.id, user.email);
 
-      this.logger.log(`OAuth login successful: ${user.email} via ${data.provider}`);
+      this.logger.log(LOG_MESSAGES.OAUTH_LOGIN_SUCCESS(user.email, data.provider));
 
       return {
         success: true,
@@ -403,7 +410,7 @@ export class AuthService {
         user: this.toUserDto(user),
       };
     } catch (error) {
-      this.logger.error('OAuth login error:', error);
+      this.logger.error(LOG_MESSAGES.OAUTH_LOGIN_ERROR, error);
       return {
         success: false,
         message: AUTH_MESSAGES.OAUTH_LOGIN_FAILED,
@@ -432,14 +439,14 @@ export class AuthService {
       const resetLink = `${frontendUrl}/reset-password?token=${token}`;
       await this.emailService.sendPasswordResetEmail(user.email, user.name, resetLink);
 
-      this.logger.log(`Password reset requested for: ${user.email}`);
+      this.logger.log(LOG_MESSAGES.PASSWORD_RESET_REQUESTED(user.email));
 
       return {
         success: true,
         message: AUTH_MESSAGES.PASSWORD_RESET_HINT,
       };
     } catch (error) {
-      this.logger.error('Password reset request error:', error);
+      this.logger.error(LOG_MESSAGES.PASSWORD_RESET_REQUEST_ERROR, error);
       return {
         success: false,
         message: AUTH_MESSAGES.PASSWORD_RESET_REQUEST_FAILED,
@@ -465,17 +472,185 @@ export class AuthService {
       await this.tokenService.markPasswordResetTokenUsed(data.token);
       await this.tokenService.revokeAllUserTokens(userId);
 
-      this.logger.log(`Password reset successful for user: ${userId}`);
+      this.logger.log(LOG_MESSAGES.PASSWORD_RESET_SUCCESS(userId));
 
       return {
         success: true,
         message: AUTH_MESSAGES.PASSWORD_RESET_SUCCESS,
       };
     } catch (error) {
-      this.logger.error('Password reset error:', error);
+      this.logger.error(LOG_MESSAGES.PASSWORD_RESET_ERROR, error);
       return {
         success: false,
         message: AUTH_MESSAGES.PASSWORD_RESET_FAILED,
+      };
+    }
+  }
+
+  /**
+   * Get user settings. Creates default settings if none exist.
+   */
+  async getSettings(data: IGetSettingsRequest): Promise<ISettingsResponse> {
+    try {
+      const settings = await this.userService.getOrCreateSettings(data.user_id);
+
+      return {
+        success: true,
+        message: AUTH_MESSAGES.SETTINGS_FETCH_SUCCESS,
+        settings: {
+          dark_mode: settings.darkMode,
+          auto_refresh: settings.autoRefresh,
+          email_expiry: settings.emailExpiry,
+          notifications: settings.notifications,
+          blocked_senders: settings.blockedSenders,
+        },
+      };
+    } catch (error) {
+      this.logger.error(LOG_MESSAGES.GET_SETTINGS_ERROR, error);
+      return {
+        success: false,
+        message: AUTH_MESSAGES.SETTINGS_FETCH_FAILED,
+      };
+    }
+  }
+
+  /**
+   * Update user settings.
+   */
+  async updateSettings(data: IUpdateSettingsRequest): Promise<ISettingsResponse> {
+    try {
+      const updateData: {
+        darkMode?: boolean;
+        autoRefresh?: boolean;
+        emailExpiry?: string;
+        notifications?: boolean;
+        blockedSenders?: string[];
+      } = {};
+
+      if (data.dark_mode !== undefined) updateData.darkMode = data.dark_mode;
+      if (data.auto_refresh !== undefined) updateData.autoRefresh = data.auto_refresh;
+      if (data.email_expiry !== undefined) updateData.emailExpiry = data.email_expiry;
+      if (data.notifications !== undefined) updateData.notifications = data.notifications;
+      if (data.blocked_senders !== undefined) updateData.blockedSenders = data.blocked_senders;
+
+      const settings = await this.userService.updateSettings(data.user_id, updateData);
+
+      return {
+        success: true,
+        message: AUTH_MESSAGES.SETTINGS_UPDATE_SUCCESS,
+        settings: {
+          dark_mode: settings.darkMode,
+          auto_refresh: settings.autoRefresh,
+          email_expiry: settings.emailExpiry,
+          notifications: settings.notifications,
+          blocked_senders: settings.blockedSenders,
+        },
+      };
+    } catch (error) {
+      this.logger.error(LOG_MESSAGES.UPDATE_SETTINGS_ERROR, error);
+      return {
+        success: false,
+        message: AUTH_MESSAGES.SETTINGS_UPDATE_FAILED,
+      };
+    }
+  }
+
+  /**
+   * Change password for users with password auth.
+   */
+  async changePassword(data: IChangePasswordRequest): Promise<IChangePasswordResponse> {
+    try {
+      const user = await this.userService.findById(data.user_id);
+      if (!user) {
+        return {
+          success: false,
+          message: AUTH_MESSAGES.USER_NOT_FOUND,
+        };
+      }
+
+      // Check if user has a password (not OAuth-only)
+      if (!user.password) {
+        return {
+          success: false,
+          message: AUTH_MESSAGES.NO_PASSWORD_SET,
+        };
+      }
+
+      // Validate current password
+      const isValid = await this.userService.validatePassword(user, data.current_password);
+      if (!isValid) {
+        return {
+          success: false,
+          message: AUTH_MESSAGES.CURRENT_PASSWORD_INCORRECT,
+        };
+      }
+
+      // Update password
+      await this.userService.updatePassword(data.user_id, data.new_password);
+
+      // Revoke all tokens to force re-login
+      await this.tokenService.revokeAllUserTokens(data.user_id);
+
+      this.logger.log(LOG_MESSAGES.PASSWORD_CHANGED(data.user_id));
+
+      return {
+        success: true,
+        message: AUTH_MESSAGES.PASSWORD_CHANGE_SUCCESS,
+      };
+    } catch (error) {
+      this.logger.error(LOG_MESSAGES.CHANGE_PASSWORD_ERROR, error);
+      return {
+        success: false,
+        message: AUTH_MESSAGES.PASSWORD_CHANGE_FAILED,
+      };
+    }
+  }
+
+  /**
+   * Delete user account. Requires password for users with password auth.
+   */
+  async deleteAccount(data: IDeleteAccountRequest): Promise<IDeleteAccountResponse> {
+    try {
+      const user = await this.userService.findById(data.user_id);
+      if (!user) {
+        return {
+          success: false,
+          message: AUTH_MESSAGES.USER_NOT_FOUND,
+        };
+      }
+
+      // If user has a password, require it for deletion
+      if (user.password) {
+        if (!data.password) {
+          return {
+            success: false,
+            message: AUTH_MESSAGES.PASSWORD_REQUIRED_FOR_DELETE,
+          };
+        }
+
+        const isValid = await this.userService.validatePassword(user, data.password);
+        if (!isValid) {
+          return {
+            success: false,
+            message: AUTH_MESSAGES.CURRENT_PASSWORD_INCORRECT,
+          };
+        }
+      }
+
+      // Delete the user (cascade will handle related records)
+      await this.userService.delete(data.user_id);
+
+      this.logger.log(LOG_MESSAGES.ACCOUNT_DELETED(data.user_id));
+
+      return {
+        success: true,
+        message: AUTH_MESSAGES.ACCOUNT_DELETED,
+      };
+    } catch (error) {
+      this.logger.error(LOG_MESSAGES.DELETE_ACCOUNT_ERROR, error);
+      return {
+        success: false,
+        message: AUTH_MESSAGES.ACCOUNT_DELETE_FAILED,
       };
     }
   }

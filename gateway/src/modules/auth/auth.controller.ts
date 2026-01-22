@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Put,
+  Delete,
   Body,
   Headers,
   HttpCode,
@@ -22,6 +23,9 @@ import {
   PasswordResetDto,
   ResetPasswordDto,
   UpdateUserDto,
+  UpdateSettingsDto,
+  ChangePasswordDto,
+  DeleteAccountDto,
 } from './dto';
 import { ICurrentUserData } from '../../common/interfaces';
 
@@ -185,5 +189,55 @@ export class AuthController {
   @Get('health/live')
   async healthLive() {
     return this.authService.healthLive();
+  }
+
+  /** GET /auth/settings - Get current user settings (requires auth) */
+  @Get('settings')
+  async getSettings(@CurrentUser() user: ICurrentUserData) {
+    return this.authService.getSettings({
+      user_id: user.userId,
+    });
+  }
+
+  /** PUT /auth/settings - Update current user settings (requires auth) */
+  @Put('settings')
+  async updateSettings(
+    @CurrentUser() user: ICurrentUserData,
+    @Body() dto: UpdateSettingsDto,
+  ) {
+    return this.authService.updateSettings({
+      user_id: user.userId,
+      dark_mode: dto.darkMode,
+      auto_refresh: dto.autoRefresh,
+      email_expiry: dto.emailExpiry,
+      notifications: dto.notifications,
+      blocked_senders: dto.blockedSenders,
+    });
+  }
+
+  /** POST /auth/change-password - Change password (requires auth) */
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @CurrentUser() user: ICurrentUserData,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword({
+      user_id: user.userId,
+      current_password: dto.currentPassword,
+      new_password: dto.newPassword,
+    });
+  }
+
+  /** DELETE /auth/account - Delete account (requires auth) */
+  @Delete('account')
+  async deleteAccount(
+    @CurrentUser() user: ICurrentUserData,
+    @Body() dto: DeleteAccountDto,
+  ) {
+    return this.authService.deleteAccount({
+      user_id: user.userId,
+      password: dto.password,
+    });
   }
 }
