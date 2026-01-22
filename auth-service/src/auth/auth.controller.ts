@@ -1,4 +1,4 @@
-import { Controller, Post, Put, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Put, Delete, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
   IAuthResponse,
@@ -21,6 +21,13 @@ import {
   IValidateTokenRequest,
   IValidateTokenResponse,
   IVerifyEmailRequest,
+  IGetSettingsRequest,
+  ISettingsResponse,
+  IUpdateSettingsRequest,
+  IChangePasswordRequest,
+  IChangePasswordResponse,
+  IDeleteAccountRequest,
+  IDeleteAccountResponse,
 } from '../interfaces';
 import { InternalApiKeyGuard } from '../guards';
 
@@ -139,5 +146,39 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() data: IResetPasswordConfirmRequest): Promise<IResetPasswordConfirmResponse> {
     return this.authService.resetPassword(data);
+  }
+
+  /**
+   * POST /auth/settings - Get user settings.
+   */
+  @Post('settings')
+  @HttpCode(HttpStatus.OK)
+  async getSettings(@Body() data: IGetSettingsRequest): Promise<ISettingsResponse> {
+    return this.authService.getSettings(data);
+  }
+
+  /**
+   * PUT /auth/settings - Update user settings.
+   */
+  @Put('settings')
+  async updateSettings(@Body() data: IUpdateSettingsRequest): Promise<ISettingsResponse> {
+    return this.authService.updateSettings(data);
+  }
+
+  /**
+   * POST /auth/change-password - Change user password.
+   */
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  async changePassword(@Body() data: IChangePasswordRequest): Promise<IChangePasswordResponse> {
+    return this.authService.changePassword(data);
+  }
+
+  /**
+   * DELETE /auth/account - Delete user account.
+   */
+  @Delete('account')
+  async deleteAccount(@Body() data: IDeleteAccountRequest): Promise<IDeleteAccountResponse> {
+    return this.authService.deleteAccount(data);
   }
 }

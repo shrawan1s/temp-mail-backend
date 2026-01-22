@@ -40,8 +40,32 @@ model User {
   refreshTokens RefreshToken[]
   passwordResets PasswordReset[]
   sessions      Session[]
+  settings       UserSettings?
   
   @@map("users")
+}
+
+model UserSettings {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Appearance
+  darkMode        Boolean  @default(false)
+  
+  // Email preferences
+  autoRefresh     Boolean  @default(true)
+  emailExpiry     String   @default("24h")
+  notifications   Boolean  @default(true)
+  
+  // Privacy
+  blockedSenders  String[] @default([])
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("user_settings")
 }
 
 model RefreshToken {
