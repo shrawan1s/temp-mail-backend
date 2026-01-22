@@ -34,7 +34,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage, OnModuleDestroy 
 
     return {
       totalHits,
-      timeToExpire: Math.ceil(timeToExpire / 1000),
+      timeToExpire: timeToExpire, // Return in milliseconds
       isBlocked: false,
       timeToBlockExpire: 0,
     };
