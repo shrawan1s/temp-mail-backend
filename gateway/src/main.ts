@@ -15,6 +15,11 @@ async function bootstrap() {
     rawBody: true, // For Stripe/Razorpay webhooks
   });
 
+  // Trust Proxy for Render (Load Balancer)
+  // This allows proper IP detection via X-Forwarded-For
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
+
   const configService = app.get(ConfigService);
   const port = configService.get<number>('app.port', 5000);
   const corsOrigin = configService.get<string>('app.corsOrigin');
