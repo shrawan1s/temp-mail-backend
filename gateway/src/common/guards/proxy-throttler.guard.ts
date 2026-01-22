@@ -1,39 +1,39 @@
-import { Injectable, ExecutionContext } from '@nestjs/common';
+import { Injectable, ExecutionContext, Logger } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerException } from '@nestjs/throttler';
 
 /**
- * Custom throttler guard that extracts the real client IP from proxy headers.
- * Render (and other reverse proxies) forward requests, so we need to check
- * X-Forwarded-For header to get the actual client IP for proper rate limiting.
+ * Custom throttler guard that relies on 'trust proxy' setting for IP detection
+ * and adds logging for debugging.
  */
 @Injectable()
 export class ProxyAwareThrottlerGuard extends ThrottlerGuard {
+    private readonly logger = new Logger(ProxyAwareThrottlerGuard.name);
+
     /**
-     * Extract the real client IP from X-Forwarded-For header.
-     * Falls back to regular IP if header is not present.
+     * Get the tracker for the current request (Client IP).
+     * Relies on Express 'trust proxy' setting to populate req.ip correctly.
      */
     protected async getTracker(req: Record<string, any>): Promise<string> {
-        // X-Forwarded-For format: "client, proxy1, proxy2, ..."
-        const forwardedFor = req.headers['x-forwarded-for'];
+        const clientIp = req.ip || 'unknown';
 
-        if (forwardedFor) {
-            // Get the first (original client) IP
-            const clientIp = Array.isArray(forwardedFor)
-                ? forwardedFor[0]
-                : forwardedFor.split(',')[0].trim();
-            return clientIp;
-        }
+        // Log the detected IP for debugging purposes
+        // This will help identify if the load balancer IP is being used instead of client IP
+        this.logger.debug(`Request from IP: ${clientIp}`);
 
-        // Fallback to direct connection IP
-        return req.ip || req.connection?.remoteAddress || 'unknown';
+        return clientIp;
     }
 
     /**
-     * Override to provide better error message
+     * Override to provide better error message and log violations
      */
     protected async throwThrottlingException(
         context: ExecutionContext,
     ): Promise<void> {
+        const req = context.switchToHttp().getRequest();
+        const clientIp = req.ip || 'unknown';
+
+        this.logger.warn(`Rate limit exceeded for IP: ${clientIp}`);
+
         throw new ThrottlerException('Too Many Requests');
     }
 }
