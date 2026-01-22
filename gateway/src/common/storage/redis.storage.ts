@@ -10,10 +10,10 @@ export class RedisThrottlerStorage implements ThrottlerStorage, OnModuleDestroy 
 
   constructor(private readonly configService: ConfigService) {
     this.redis = new Redis({
-      host: this.configService.get<string>('REDIS_HOST', 'localhost'),
-      port: this.configService.get<number>('REDIS_PORT', 6379),
-      username: this.configService.get<string>('REDIS_USERNAME'),
-      password: this.configService.get<string>('REDIS_PASSWORD'),
+      host: this.configService.get<string>('app.redisHost', 'localhost'),
+      port: this.configService.get<number>('app.redisPort', 6379),
+      username: this.configService.get<string>('app.redisUsername'),
+      password: this.configService.get<string>('app.redisPassword'),
     });
   }
 

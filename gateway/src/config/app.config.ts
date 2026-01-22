@@ -12,6 +12,10 @@ export default registerAs('app', () => ({
   paymentServiceUrl: process.env.PAYMENT_SERVICE_URL || 'http://localhost:5002',
   
   // Redis
+  redisHost: process.env.REDIS_HOST || 'localhost',
+  redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),
+  redisUsername: process.env.REDIS_USERNAME || '',
+  redisPassword: process.env.REDIS_PASSWORD || '',
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
   
   // Rate Limiting
