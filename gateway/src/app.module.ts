@@ -5,7 +5,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { appConfig, throttleConfig } from './config';
 import { GlobalExceptionFilter } from './common/filters';
 import { JwtAuthGuard, ProxyAwareThrottlerGuard } from './common/guards';
-import { RedisThrottlerStorage } from './common/storage/redis.storage';
 import { AuthModule } from './modules/auth/auth.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { HealthModule } from './modules/health/health.module';
@@ -22,13 +21,10 @@ import { HealthModule } from './modules/health/health.module';
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        throttlers: [{
-          ttl: configService.get<number>('throttle.ttl', 60) * 1000,
-          limit: configService.get<number>('throttle.limit', 100),
-        }],
-        storage: new RedisThrottlerStorage(configService),
-      }),
+      useFactory: (configService: ConfigService) => ([{
+        ttl: configService.get<number>('throttle.ttl', 60) * 1000,
+        limit: configService.get<number>('throttle.limit', 100),
+      }]),
     }),
 
     // Feature Modules
