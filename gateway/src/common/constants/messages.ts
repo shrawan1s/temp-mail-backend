@@ -31,6 +31,15 @@ export const LOG_MESSAGES = {
   REDIS_CLOSED: 'Redis throttler connection closed',
   REDIS_RECONNECTING: '🔄 Redis throttler reconnecting...',
   REDIS_RETRY: (attempt: number, delay: number) => `Redis throttler retry attempt ${attempt}, next retry in ${delay}ms`,
+  
+  // Rate Limiting
+  RATE_LIMIT_KEY_CREATED: (key: string, ttl: number, limit: number) => `Rate limit key created: ${key} (TTL: ${ttl}ms, Limit: ${limit})`,
+  RATE_LIMIT_WARNING: (key: string, hits: number, limit: number, expires: number) => `Rate limit warning: ${key} has ${hits}/${limit} hits (expires in ${expires}ms)`,
+  RATE_LIMIT_EXCEEDED: (ip: string) => `Rate limit exceeded for IP: ${ip}`,
+  REDIS_INCREMENT_ERROR: (key: string, message: string) => `Redis increment error for key ${key}: ${message}`,
+  
+  // IP Detection
+  IP_DETECTION: (count: number, ip: string, forwardedFor: string) => `IP Detection [${count}] - req.ip: ${ip}, X-Forwarded-For: ${forwardedFor}`,
 } as const;
 
 /**

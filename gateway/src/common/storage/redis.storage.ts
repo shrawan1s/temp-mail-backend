@@ -62,20 +62,37 @@ export class RedisThrottlerStorage implements ThrottlerStorage, OnModuleDestroy 
         blockDuration: number,
         throttlerName: string,
     ): Promise<ThrottlerStorageRecord> {
-        const totalHits = await this.redis.incr(key);
+        try {
+            const totalHits = await this.redis.incr(key);
 
-        if (totalHits === 1) {
-            await this.redis.pexpire(key, ttl);
+            if (totalHits === 1) {
+                await this.redis.pexpire(key, ttl);
+                this.logger.log(LOG_MESSAGES.RATE_LIMIT_KEY_CREATED(key, ttl, limit));
+            }
+
+            const timeToExpire = await this.redis.pttl(key);
+
+            // Log when approaching or exceeding limit
+            if (totalHits >= limit - 5) {
+                this.logger.warn(LOG_MESSAGES.RATE_LIMIT_WARNING(key, totalHits, limit, timeToExpire));
+            }
+
+            return {
+                totalHits,
+                timeToExpire: timeToExpire,
+                isBlocked: false,
+                timeToBlockExpire: 0,
+            };
+        } catch (error) {
+            this.logger.error(LOG_MESSAGES.REDIS_INCREMENT_ERROR(key, error.message));
+            // Return a value that won't trigger rate limiting on Redis errors
+            return {
+                totalHits: 1,
+                timeToExpire: ttl,
+                isBlocked: false,
+                timeToBlockExpire: 0,
+            };
         }
-
-        const timeToExpire = await this.redis.pttl(key);
-
-        return {
-            totalHits,
-            timeToExpire: timeToExpire, // Return in milliseconds
-            isBlocked: false,
-            timeToBlockExpire: 0,
-        };
     }
 
     onModuleDestroy() {
