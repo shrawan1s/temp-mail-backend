@@ -1,5 +1,6 @@
 import { Injectable, ExecutionContext, Logger } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerException } from '@nestjs/throttler';
+import { LOG_MESSAGES } from '../constants/messages';
 
 /**
  * Custom throttler guard that relies on 'trust proxy' setting for IP detection
@@ -15,13 +16,18 @@ export class ProxyAwareThrottlerGuard extends ThrottlerGuard {
      */
     protected async getTracker(req: Record<string, any>): Promise<string> {
         const clientIp = req.ip || 'unknown';
+        const forwardedFor = req.headers?.['x-forwarded-for'] || 'none';
 
-        // Log the detected IP for debugging purposes
-        // This will help identify if the load balancer IP is being used instead of client IP
-        this.logger.debug(`Request from IP: ${clientIp}`);
+        // Log every 10th request to avoid log spam
+        this.requestCount = (this.requestCount || 0) + 1;
+        if (this.requestCount === 1 || this.requestCount % 10 === 0) {
+            this.logger.log(LOG_MESSAGES.IP_DETECTION(this.requestCount, clientIp, forwardedFor));
+        }
 
         return clientIp;
     }
+
+    private requestCount = 0;
 
     /**
      * Override to provide better error message and log violations
@@ -32,7 +38,7 @@ export class ProxyAwareThrottlerGuard extends ThrottlerGuard {
         const req = context.switchToHttp().getRequest();
         const clientIp = req.ip || 'unknown';
 
-        this.logger.warn(`Rate limit exceeded for IP: ${clientIp}`);
+        this.logger.warn(LOG_MESSAGES.RATE_LIMIT_EXCEEDED(clientIp));
 
         throw new ThrottlerException('Too Many Requests');
     }

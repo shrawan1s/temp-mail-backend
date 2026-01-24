@@ -10,6 +10,7 @@ services:
     plan: free
     dockerContext: .
     dockerfilePath: auth-service/Dockerfile
+    healthCheckPath: /health
     envVars:
       # Database (external PostgreSQL)
       - key: DATABASE_URL
@@ -68,6 +69,7 @@ services:
     plan: free
     dockerContext: .
     dockerfilePath: payment-service/Dockerfile
+    healthCheckPath: /health
     envVars:
       # Database (external PostgreSQL - same as auth-service)
       - key: DATABASE_URL
@@ -104,6 +106,7 @@ services:
     plan: free
     dockerContext: .
     dockerfilePath: gateway/Dockerfile
+    healthCheckPath: /api/v1/health
     envVars:
       # Server
       - key: PORT
