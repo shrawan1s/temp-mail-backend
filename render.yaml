@@ -10,7 +10,6 @@ services:
     plan: free
     dockerContext: .
     dockerfilePath: auth-service/Dockerfile
-    healthCheckPath: /health
     envVars:
       # Database (external PostgreSQL)
       - key: DATABASE_URL
@@ -69,7 +68,6 @@ services:
     plan: free
     dockerContext: .
     dockerfilePath: payment-service/Dockerfile
-    healthCheckPath: /health
     envVars:
       # Database (external PostgreSQL - same as auth-service)
       - key: DATABASE_URL
@@ -106,7 +104,6 @@ services:
     plan: free
     dockerContext: .
     dockerfilePath: gateway/Dockerfile
-    healthCheckPath: /api/v1/health
     envVars:
       # Server
       - key: PORT
@@ -137,9 +134,9 @@ services:
       - key: REDIS_PASSWORD
         sync: false
       - key: THROTTLE_TTL
-        value: 60
+        sync: false
       - key: THROTTLE_LIMIT
-        value: 50
+        sync: false
       # CORS
       - key: CORS_ORIGIN
         sync: false
