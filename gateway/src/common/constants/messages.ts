@@ -22,6 +22,15 @@ export const ERROR_MESSAGES = {
 export const LOG_MESSAGES = {
   GATEWAY_STARTED: (port: number) => `🚀 Gateway is running on http://localhost:${port}`,
   API_AVAILABLE: (port: number, prefix: string) => `📚 API available at http://localhost:${port}/${prefix}`,
+  
+  // Redis Throttler
+  REDIS_CONNECTING: (host: string, port: number) => `Connecting to Redis throttler storage at ${host}:${port}`,
+  REDIS_CONNECTED: '✅ Redis throttler storage connected successfully',
+  REDIS_READY: '✅ Redis throttler storage ready',
+  REDIS_ERROR: (message: string) => `❌ Redis throttler error: ${message}`,
+  REDIS_CLOSED: 'Redis throttler connection closed',
+  REDIS_RECONNECTING: '🔄 Redis throttler reconnecting...',
+  REDIS_RETRY: (attempt: number, delay: number) => `Redis throttler retry attempt ${attempt}, next retry in ${delay}ms`,
 } as const;
 
 /**
