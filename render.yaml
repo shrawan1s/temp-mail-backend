@@ -1,149 +1,56 @@
-# Render Deployment Configuration
-# Microservices architecture with external PostgreSQL database
-# Services communicate via gRPC over public internet, secured by INTERNAL_API_KEY
-
 services:
-  # ============= Auth Service =============
   - type: web
-    name: temp-email-auth-service
-    runtime: docker
+    name: temp-email-backend
+    env: docker
     plan: free
-    dockerContext: .
-    dockerfilePath: auth-service/Dockerfile
-    healthCheckPath: /health
+    healthCheckPath: /api/v1/health
     envVars:
-      # Database (external PostgreSQL)
-      - key: DATABASE_URL
-        sync: false
-      # Server
       - key: PORT
         sync: false
       - key: NODE_ENV
-        value: production
-      - key: INTERNAL_API_KEY
         sync: false
-      # JWT
+      - key: CORS_ORIGIN
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_USERNAME
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
       - key: JWT_SECRET
         sync: false
-      - key: JWT_REFRESH_SECRET
+      - key: JWT_ACCESS_EXPIRES_IN
         sync: false
-      # Brevo (Email)
-      - key: BREVO_API_KEY
+      - key: JWT_REFRESH_EXPIRES_IN
         sync: false
-      - key: SENDER_EMAIL
-        sync: false
-      - key: SENDER_NAME
-        sync: false
-      # OAuth - Google
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
-      # OAuth - GitHub
       - key: GITHUB_CLIENT_ID
         sync: false
       - key: GITHUB_CLIENT_SECRET
         sync: false
-      # URLs
-      - key: FRONTEND_URL
-        sync: false
-      # Redis
-      - key: REDIS_HOST
-        sync: false
-      - key: REDIS_PORT
-        sync: false
-      - key: REDIS_USERNAME
-        sync: false
-      - key: REDIS_PASSWORD
-        sync: false
-      # New Relic
-      - key: NEW_RELIC_LICENSE_KEY
-        sync: false
-      - key: NEW_RELIC_APP_NAME
-        sync: false
-
-  # ============= Payment Service =============
-  - type: web
-    name: temp-email-payment-service
-    runtime: docker
-    plan: free
-    dockerContext: .
-    dockerfilePath: payment-service/Dockerfile
-    healthCheckPath: /health
-    envVars:
-      # Database (external PostgreSQL - same as auth-service)
-      - key: DATABASE_URL
-        sync: false
-      # Server
-      - key: PORT
-        sync: false
-      - key: NODE_ENV
-        value: production
-      - key: INTERNAL_API_KEY
-        sync: false
-      # Razorpay
       - key: RAZORPAY_KEY_ID
         sync: false
       - key: RAZORPAY_KEY_SECRET
-        sync: false
-      # Brevo (Email)
-      - key: BREVO_API_KEY
-        sync: false
-      - key: SENDER_EMAIL
-        sync: false
-      - key: SENDER_NAME
-        sync: false
-      # New Relic
-      - key: NEW_RELIC_LICENSE_KEY
-        sync: false
-      - key: NEW_RELIC_APP_NAME
-        sync: false
-
-  # ============= Gateway =============
-  - type: web
-    name: temp-email-gateway
-    runtime: docker
-    plan: free
-    dockerContext: .
-    dockerfilePath: gateway/Dockerfile
-    healthCheckPath: /api/v1/health
-    envVars:
-      # Server
-      - key: PORT
-        value: 5000
-      - key: NODE_ENV
-        value: production
-      - key: INTERNAL_API_KEY
-        sync: false
-      # HTTP Service URLs (Service Discovery)
-      - key: AUTH_SERVICE_URL
-        sync: false
-      - key: PAYMENT_SERVICE_URL
-        sync: false
-      # JWT (for token validation)
-      - key: JWT_SECRET
-        sync: false
-      - key: JWT_EXPIRES_IN
-        sync: false
-      - key: JWT_REFRESH_EXPIRES_IN
-        sync: false
-      # Redis (Rate Limiting)
-      - key: REDIS_HOST
-        sync: false
-      - key: REDIS_PORT
-        sync: false
-      - key: REDIS_USERNAME
-        sync: false
-      - key: REDIS_PASSWORD
         sync: false
       - key: THROTTLE_TTL
         sync: false
       - key: THROTTLE_LIMIT
         sync: false
-      # CORS
-      - key: CORS_ORIGIN
+      - key: BREVO_API_KEY
         sync: false
-      # New Relic
+      - key: SENDER_EMAIL
+        sync: false
+      - key: SENDER_NAME
+        sync: false
       - key: NEW_RELIC_LICENSE_KEY
         sync: false
       - key: NEW_RELIC_APP_NAME
