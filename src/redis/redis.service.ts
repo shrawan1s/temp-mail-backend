@@ -16,9 +16,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly MAX_RETRIES = 5;
   private readonly RETRY_DELAY_MS = 3000;
 
-  constructor(private configService: ConfigService) {}
-
-  async onModuleInit() {
+  constructor(private configService: ConfigService) {
     const host = this.configService.get<string>('redis.host');
     const port = this.configService.get<number>('redis.port');
     const username = this.configService.get<string>('redis.username');
@@ -55,7 +53,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.client.on('reconnecting', () => {
       this.logger.log(LOG_MESSAGES.REDIS_RECONNECTING);
     });
+  }
 
+  async onModuleInit() {
     await this.connectWithRetry();
   }
 
