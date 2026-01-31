@@ -42,8 +42,9 @@ export class ResendVerificationDto {
 }
 
 export class RefreshTokenDto {
+  @IsOptional()
   @IsString()
-  refresh_token: string;
+  refreshToken?: string;
 }
 
 export class OAuthLoginDto {

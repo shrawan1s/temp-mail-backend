@@ -67,7 +67,7 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refreshToken(@Body() data: RefreshTokenDto) {
-    return this.authService.refreshToken(data.refresh_token);
+    return this.authService.refreshToken(data.refreshToken!);
   }
 
   @Public()
