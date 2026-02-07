@@ -6,6 +6,12 @@ import { IRazorpayOrder } from 'src/common';
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
 const Razorpay = require('razorpay');
 
+/**
+ * Razorpay Service
+ *
+ * Low-level wrapper around the Razorpay SDK.
+ * Handles order creation and payment signature verification.
+ */
 @Injectable()
 export class RazorpayService {
   private readonly razorpay: any;
@@ -22,6 +28,13 @@ export class RazorpayService {
     });
   }
 
+  /**
+   * Creates a Razorpay order for the specified amount.
+   * Amount should be in paise (1 INR = 100 paise).
+   * @param amount - Amount in paise
+   * @param currency - Currency code (defaults to INR)
+   * @returns Razorpay order object containing order ID
+   */
   async createOrder(
     amount: number,
     currency: string = Currency.INR,
@@ -35,6 +48,14 @@ export class RazorpayService {
     return (await this.razorpay.orders.create(options)) as IRazorpayOrder;
   }
 
+  /**
+   * Verifies the HMAC signature from Razorpay payment callback.
+   * Ensures payment authenticity and prevents tampering.
+   * @param orderId - Razorpay order ID
+   * @param paymentId - Razorpay payment ID
+   * @param signature - HMAC signature to verify
+   * @returns True if signature is valid, false otherwise
+   */
   verifySignature(
     orderId: string,
     paymentId: string,

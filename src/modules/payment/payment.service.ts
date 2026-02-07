@@ -19,6 +19,12 @@ import {
   IVerifyPaymentData,
 } from '../../common/types';
 
+/**
+ * Payment Service
+ *
+ * Manages subscription plans, order creation, payment verification,
+ * and subscription lifecycle. Integrates with Razorpay for payment processing.
+ */
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
@@ -29,6 +35,11 @@ export class PaymentService {
     private configService: ConfigService,
   ) {}
 
+  /**
+   * Retrieves all available active subscription plans.
+   * Plans are sorted by sortOrder for UI display.
+   * @returns API response with array of plan objects
+   */
   async getPlans(): Promise<IApiResponse<IPlansData>> {
     const plans = await this.prisma.plan.findMany({
       where: { isActive: true },
@@ -53,6 +64,14 @@ export class PaymentService {
     };
   }
 
+  /**
+   * Creates a Razorpay order for purchasing a subscription plan.
+   * Validates plan exists, checks for existing subscriptions, and prevents downgrades.
+   * @param userId - The user's UUID
+   * @param planId - Plan ID (UUID)
+   * @param billingCycle - 'monthly' or 'annual'
+   * @returns API response with order ID, amount, and Razorpay key
+   */
   async createOrder(
     userId: string,
     planId: string,
@@ -128,6 +147,15 @@ export class PaymentService {
     };
   }
 
+  /**
+   * Verifies a Razorpay payment and activates the subscription.
+   * Validates signature, updates payment status, creates/updates subscription.
+   * @param orderId - Razorpay order ID
+   * @param paymentId - Razorpay payment ID
+   * @param signature - HMAC signature for verification
+   * @param userId - The user's UUID
+   * @returns API response with subscription activation result
+   */
   async verifyPayment(
     orderId: string,
     paymentId: string,
@@ -242,6 +270,12 @@ export class PaymentService {
     };
   }
 
+  /**
+   * Retrieves a user's current subscription status.
+   * Returns free plan details if no subscription exists.
+   * @param userId - The user's UUID
+   * @returns API response with subscription details
+   */
   async getSubscription(
     userId: string,
   ): Promise<IApiResponse<ISubscriptionData>> {

@@ -10,12 +10,25 @@ import {
 } from '../../../common/types';
 import { LOG_MESSAGES } from '../../../common/constants';
 
+/**
+ * OAuth Service
+ *
+ * Handles OAuth authentication flows for Google and GitHub providers.
+ * Exchanges authorization codes for access tokens and fetches user profiles.
+ */
 @Injectable()
 export class OAuthService {
   private readonly logger = new Logger(OAuthService.name);
 
   constructor(private configService: ConfigService) {}
 
+  /**
+   * Handles Google OAuth login flow.
+   * Exchanges authorization code for tokens and fetches user profile.
+   * @param code - Authorization code from Google OAuth callback
+   * @param redirectUri - The redirect URI used in the OAuth flow
+   * @returns OAuth user data (id, email, name, avatarUrl) or null on failure
+   */
   async handleGoogleLogin(
     code: string,
     redirectUri: string,
@@ -71,6 +84,14 @@ export class OAuthService {
     }
   }
 
+  /**
+   * Handles GitHub OAuth login flow.
+   * Exchanges authorization code for tokens and fetches user profile.
+   * Falls back to primary email from emails API if profile email is private.
+   * @param code - Authorization code from GitHub OAuth callback
+   * @param redirectUri - The redirect URI used in the OAuth flow
+   * @returns OAuth user data (id, email, name, avatarUrl) or null on failure
+   */
   async handleGithubLogin(
     code: string,
     redirectUri: string,
