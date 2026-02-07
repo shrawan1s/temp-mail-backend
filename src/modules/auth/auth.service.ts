@@ -14,6 +14,13 @@ import {
 } from '../../common/types';
 import { OAuthProvider } from 'src/common';
 
+/**
+ * Authentication Service
+ *
+ * Core service that orchestrates all authentication operations including
+ * user registration, login, OAuth, password management, and settings.
+ * Acts as a facade over UserService, TokenService, OAuthService, and EmailService.
+ */
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -26,6 +33,11 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
+  /**
+   * Converts a Prisma User entity to a client-safe UserDto.
+   * @param user - The Prisma User entity
+   * @returns User DTO with safe fields for client consumption
+   */
   private toUserDto(user: User): IUserDto {
     return {
       id: user.id,
@@ -38,6 +50,14 @@ export class AuthService {
     };
   }
 
+  /**
+   * Registers a new user account with email/password.
+   * Sends a verification email with a 6-digit code.
+   * @param email - User's email address
+   * @param password - User's password (will be hashed)
+   * @param name - User's display name
+   * @returns API response with user_id on success
+   */
   async register(
     email: string,
     password: string,
@@ -80,6 +100,13 @@ export class AuthService {
     }
   }
 
+  /**
+   * Verifies a user's email using the 6-digit verification code.
+   * On success, generates and returns auth tokens.
+   * @param userId - The user's ID
+   * @param code - 6-digit verification code from email
+   * @returns API response with access/refresh tokens and user data on success
+   */
   async verifyEmail(
     userId: string,
     code: string,
@@ -121,6 +148,12 @@ export class AuthService {
     }
   }
 
+  /**
+   * Resends the email verification code to a user.
+   * Generates a new code and sends it via email.
+   * @param email - User's email address
+   * @returns API response (always returns success hint for security)
+   */
   async resendVerificationCode(email: string): Promise<IApiResponse<null>> {
     try {
       const result = await this.userService.resendVerificationCode(email);
@@ -154,6 +187,13 @@ export class AuthService {
     }
   }
 
+  /**
+   * Authenticates a user with email and password.
+   * Generates access and refresh tokens on successful login.
+   * @param email - User's email address
+   * @param password - User's password
+   * @returns API response with tokens and user data on success
+   */
   async login(
     email: string,
     password: string,
@@ -211,6 +251,11 @@ export class AuthService {
     }
   }
 
+  /**
+   * Logs out a user by blacklisting their access token.
+   * @param accessToken - The JWT access token to revoke
+   * @returns API response indicating logout status
+   */
   async logout(accessToken: string): Promise<IApiResponse<null>> {
     try {
       await this.tokenService.revokeAccessToken(accessToken);
@@ -229,6 +274,12 @@ export class AuthService {
     }
   }
 
+  /**
+   * Refreshes the auth tokens using a valid refresh token.
+   * Implements token rotation - old refresh token is invalidated.
+   * @param refreshToken - The refresh token
+   * @returns API response with new tokens on success
+   */
   async refreshToken(
     refreshToken: string,
   ): Promise<IApiResponse<IAuthData | null>> {
@@ -260,6 +311,14 @@ export class AuthService {
     }
   }
 
+  /**
+   * Handles OAuth login flow for Google and GitHub.
+   * Creates new user or links OAuth provider to existing account.
+   * @param provider - OAuth provider (GOOGLE or GITHUB)
+   * @param code - Authorization code from OAuth provider
+   * @param redirectUri - The redirect URI used in the OAuth flow
+   * @returns API response with tokens and user data on success
+   */
   async oAuthLogin(
     provider: OAuthProvider,
     code: string,
@@ -330,6 +389,11 @@ export class AuthService {
     }
   }
 
+  /**
+   * Retrieves a user's profile by their ID.
+   * @param userId - The user's ID
+   * @returns API response with user data on success
+   */
   async getUser(userId: string): Promise<IApiResponse<IAuthData | null>> {
     try {
       const user = await this.userService.findById(userId);
@@ -356,6 +420,13 @@ export class AuthService {
     }
   }
 
+  /**
+   * Updates a user's profile information.
+   * @param userId - The user's ID
+   * @param name - New display name (optional)
+   * @param avatarUrl - New avatar URL (optional)
+   * @returns API response with updated user data on success
+   */
   async updateUser(
     userId: string,
     name?: string,
@@ -383,6 +454,12 @@ export class AuthService {
     }
   }
 
+  /**
+   * Initiates password reset flow by sending a reset email.
+   * Always returns success hint to prevent email enumeration.
+   * @param email - User's email address
+   * @returns API response (always returns generic success for security)
+   */
   async requestPasswordReset(email: string): Promise<IApiResponse<null>> {
     try {
       const user = await this.userService.findByEmail(email);
@@ -419,6 +496,13 @@ export class AuthService {
     }
   }
 
+  /**
+   * Completes password reset using the reset token.
+   * Revokes all existing sessions after password change.
+   * @param token - Password reset token from email
+   * @param newPassword - New password to set
+   * @returns API response indicating success or failure
+   */
   async resetPassword(
     token: string,
     newPassword: string,
@@ -452,6 +536,12 @@ export class AuthService {
     }
   }
 
+  /**
+   * Retrieves user settings (theme, notifications, etc.).
+   * Creates default settings if none exist.
+   * @param userId - The user's ID
+   * @returns API response with user settings
+   */
   async getSettings(
     userId: string,
   ): Promise<IApiResponse<ISettingsData | null>> {
@@ -481,6 +571,12 @@ export class AuthService {
     }
   }
 
+  /**
+   * Updates user settings (theme, notifications, blocked senders, etc.).
+   * @param userId - The user's ID
+   * @param data - Settings to update
+   * @returns API response with updated settings
+   */
   async updateSettings(
     userId: string,
     data: {
@@ -517,6 +613,14 @@ export class AuthService {
     }
   }
 
+  /**
+   * Changes user's password (requires current password verification).
+   * Revokes all existing sessions after password change.
+   * @param userId - The user's ID
+   * @param currentPassword - Current password for verification
+   * @param newPassword - New password to set
+   * @returns API response indicating success or failure
+   */
   async changePassword(
     userId: string,
     currentPassword: string,
@@ -570,6 +674,14 @@ export class AuthService {
     }
   }
 
+  /**
+   * Permanently deletes a user account.
+   * Requires password verification for accounts with passwords.
+   * OAuth-only accounts can be deleted without password.
+   * @param userId - The user's ID
+   * @param password - Password for verification (required for password-based accounts)
+   * @returns API response indicating success or failure
+   */
   async deleteAccount(
     userId: string,
     password?: string,
